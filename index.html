@@ -1,16 +1,228 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <title>B-World - We love books</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-8">
+            <div class="text-2xl font-bold">
+              <span class="text-gray-800">B-World</span>
+            </div>
+            <div class="text-sm text-gray-500">We love<br />books</div>
+            <div class="relative flex-1 max-w-md">
+              <input type="text" placeholder="Type any book here" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              <button class="absolute right-2 top-2 text-gray-400">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center space-x-6">
+            <a href="#" class="text-sm text-gray-600 hover:text-gray-800">Privacy policy</a>
+            <a href="#" class="text-sm text-gray-600 hover:text-gray-800">Warranty</a>
+            <a href="#" class="text-sm text-gray-600 hover:text-gray-800">Shipping</a>
+            <a href="#" class="text-sm text-gray-600 hover:text-gray-800">Returns</a>
+            <button class="text-purple-600">
+              <i class="fas fa-shopping-cart text-xl"></i>
+            </button>
+            <button class="text-purple-600">
+              <i class="fas fa-heart text-xl"></i>
+            </button>
+            <button class="text-gray-600">
+              <i class="fas fa-user text-xl"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white border-t border-gray-200">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between py-4">
+          <div class="flex space-x-5">
+            <a href="#" class="text-gray-700 hover:text-purple-600">The must read</a>
+            <a href="#" class="text-gray-700 hover:text-purple-600">News</a>
+            <a href="#" class="text-gray-700 hover:text-purple-600">Promotion of the mount</a>
+            <a href="#" class="text-gray-700 hover:text-purple-600">Publishs</a>
+            <a href="#" class="text-gray-700 hover:text-purple-600">Subscribe to the newsletter</a>
+          </div>
+          <div class="flex items-center space-x-4">
+            <i class="fas fa-phone text-purple-600"></i>
+            <span class="text-gray-700">+445 87 999 000</span>
+            <button class="px-6 py-2 border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50">Request a call</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex items-center space-x-2 text-sm text-gray-600">
+        <a href="#" class="hover:text-purple-600">Home</a>
+        <span>›</span>
+        <a href="#" class="hover:text-purple-600">Fantasy books</a>
+        <span>›</span>
+        <span class="text-gray-900">Chain of Gold</span>
+      </div>
+    </div>
+
+    <!-- Product Section -->
+    <div class="container mx-auto px-4 py-8">
+      <div class="grid grid-cols-12 gap-8">
+        <!-- Thumbnails -->
+        <div class="col-span-1">
+          <div class="space-y-4">
+            <div class="border-2 border-purple-600 rounded-md p-2 cursor-pointer">
+              <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=100" alt="Book 1" class="w-full" />
+            </div>
+            <div class="border border-gray-300 rounded-md p-2 cursor-pointer hover:border-purple-600">
+              <img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=100" alt="Book 2" class="w-full" />
+            </div>
+            <div class="border border-gray-300 rounded-md p-2 cursor-pointer hover:border-purple-600">
+              <img src="https://images.unsplash.com/photo-1532012197267-da84d127e765?w=100" alt="Book 3" class="w-full" />
+            </div>
+            <div class="border border-gray-300 rounded-md p-2 cursor-pointer hover:border-purple-600">
+              <img src="https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=100" alt="Book 4" class="w-full" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Image -->
+        <div class="col-span-5">
+          <div class="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-8 relative">
+            <div class="absolute top-4 left-4 bg-white px-3 py-1 rounded-md text-sm">
+              <i class="fas fa-book-open text-gray-600"></i>
+            </div>
+            <div class="absolute top-4 right-4 text-xs text-gray-600">
+              <span class="bg-white px-2 py-1 rounded">New York Times Bestseller</span>
+            </div>
+            <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400" alt="Chain of Gold" class="w-full rounded-lg shadow-xl" />
+            <div class="absolute bottom-8 left-0 right-0 text-center">
+              <h2 class="text-5xl font-bold text-yellow-600 drop-shadow-lg">Chain of Gold</h2>
+              <p class="text-xl text-gray-700 mt-2">CASSANDRA CLARE</p>
+              <p class="text-sm text-gray-600">THE LAST HOURS BOOK ONE</p>
+              <p class="text-xs text-gray-600 mt-4">A Brand-New Series in the<br />SHADOWHUNTER WORLD</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-span-6">
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Chain of Gold: The Last Hours #1</h1>
+          <p class="text-lg text-gray-700 mb-4">Cassandra Clare</p>
+
+          <div class="flex items-center mb-4">
+            <div class="flex text-yellow-400">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star-half-alt"></i>
+            </div>
+            <span class="ml-2 text-gray-600">4.5</span>
+          </div>
+
+          <div class="text-4xl font-bold text-gray-900 mb-6">$12.49</div>
+
+          <p class="text-gray-700 mb-6 leading-relaxed">
+            From #1 New York Times and USA TODAY bestselling author Cassandra Clare comes the first novel in a brand-new trilogy where evil hides in plain sight and love cuts deeper than any blade. Chain of Gold is a Shadowhunters novel.
+          </p>
+
+          <div class="flex items-center space-x-4 mb-8">
+            <button class="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:border-purple-600">
+              <i class="fas fa-minus text-gray-600"></i>
+            </button>
+            <span class="text-xl font-semibold">1</span>
+            <button class="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:border-purple-600">
+              <i class="fas fa-plus text-gray-600"></i>
+            </button>
+          </div>
+
+          <div class="flex space-x-4 mb-8">
+            <button class="flex-1 bg-purple-600 text-white px-8 py-3 rounded-md hover:bg-purple-700 font-semibold">Add to cart</button>
+            <button class="px-8 py-3 border border-gray-300 rounded-md hover:border-purple-600 hover:text-purple-600">Favorite</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-gray-500">Publisher:</span>
+              <span class="text-gray-900 ml-2">Margaret K. Books</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Publication date:</span>
+              <span class="text-gray-900 ml-2">March 3, 2020</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Language:</span>
+              <span class="text-gray-900 ml-2">English</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Reading age:</span>
+              <span class="text-gray-900 ml-2">14+</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Print length:</span>
+              <span class="text-gray-900 ml-2">592 pages</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Dimensions:</span>
+              <span class="text-gray-900 ml-2">6 × 1.8 × 9 inches</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="container mx-auto px-4 py-8">
+      <h2 class="text-2xl font-bold mb-6">Đánh giá</h2>
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-4">
+        <div class="flex items-start space-x-4">
+          <img src="https://ui-avatars.com/api/?name=Nguyen+Cuong&background=random" alt="Avatar" class="w-12 h-12 rounded-full" />
+          <div class="flex-1">
+            <div class="flex items-center mb-2">
+              <div class="flex text-yellow-400 mr-3">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+              <span class="text-sm text-gray-500">30 phút trước</span>
+            </div>
+            <p class="font-semibold text-gray-900">Nguyễn Cường</p>
+            <p class="text-gray-900 mb-4">Truyện rất hay !</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-start space-x-4">
+          <img src="https://ui-avatars.com/api/?name=Ngoc+Huy&background=random" alt="Avatar" class="w-12 h-12 rounded-full" />
+          <div class="flex-1">
+            <div class="flex items-center mb-2">
+              <div class="flex text-yellow-400 mr-3">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+              <span class="text-sm text-gray-500">15 phút trước</span>
+            </div>
+            <p class="font-semibold text-gray-900 mb-2">Ngọc Huy</p>
+            <p class="text-gray-700">Giá thành rất rẻ, phù hợp túi tiền !</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
