@@ -53,7 +53,7 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
         style={{ minWidth: 50 }}
         onChange={async (checked) => {
           try {
-            await api.put(`api/products/${record._id}`, {
+            await api.put(`/products/${record._id}`, {
               status: checked ? 'Sẵn' : 'Hết'
             })
             message.success('Cập nhật trạng thái thành công!');
