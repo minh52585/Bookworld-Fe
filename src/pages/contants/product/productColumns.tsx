@@ -30,11 +30,14 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
     dataIndex: 'quantity',
     key: 'quantity'
   },
+
   {
     title: 'Danh mục',
     dataIndex: 'category',
-    key: 'category'
+    key: 'category',
+    render: (category: any) => category?.name || category || ''
   },
+
   {
     title: 'Hình ảnh',
     dataIndex: 'images',

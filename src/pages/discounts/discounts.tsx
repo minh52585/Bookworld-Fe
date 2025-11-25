@@ -11,7 +11,7 @@ const Discounts = () => {
     queryKey:['discounts'],
     queryFn: async() => {
       try {
-        const { data } = await api.get('api/discounts')
+        const { data } = await api.get('/discounts')
         console.log('DATA', data)
         return Array.isArray(data.data) ? data.data : [data.data]
       } catch (error) {

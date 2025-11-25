@@ -9,6 +9,7 @@ import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { ConfigProvider } from 'antd' // ✅ Thêm import này
 
 const queryClient = new QueryClient()
 
@@ -18,7 +19,9 @@ createRoot(document.getElementById('root')!).render(
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <QueryClientProvider client={queryClient}>
-            <Providers />
+            <ConfigProvider> 
+              <Providers />
+            </ConfigProvider>
             <ToastContainer
               position="top-center"
               autoClose={5000}

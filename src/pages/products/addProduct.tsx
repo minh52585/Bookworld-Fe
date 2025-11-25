@@ -20,23 +20,25 @@ const ProductsAdd = () => {
   const [loadingCats, setLoadingCats] = useState<boolean>(false)
 
   // Lấy category từ BE (trả về [{_id, name}, ...])
-  useEffect(() => {
+      useEffect(() => {
     const fetchCats = async () => {
       setLoadingCats(true)
       try {
-        const { data } = await api.get('/categories') // sửa nếu route khác
-        // giả sử data.success/data.data hoặc data.data; điều chỉnh nếu khác
-        const list = data.data || data // try both
+        const res = await api.get('/categories')
+        // API của bạn trả về { data: { items: [...] } }
+        const list = res.data.data?.items || []
         setCats(Array.isArray(list) ? list : [])
       } catch (err) {
         console.error('Fetch categories error', err)
-        message.error('Không lấy được danh mục. Bạn có thể dùng ObjectId tạm thời để test.')
+        message.error('Không lấy được danh mục.')
+        setCats([])
       } finally {
         setLoadingCats(false)
       }
     }
     fetchCats()
   }, [])
+
 
   // upload lên Cloudinary (POST)
   const uploadImage = async (file: File) => {
@@ -144,12 +146,10 @@ const ProductsAdd = () => {
                       </Select.Option>
                     ))
                   ) : (
-                    // fallback: ví dụ ObjectId tạm
-                    <>
-                      <Select.Option value="6746d865cdafb8c3b0deafa1">Lãng mạn</Select.Option>
-                      <Select.Option value="6746d875cdafb8c3b0deafb2">Trinh thám</Select.Option>
-                      <Select.Option value="6746d892cdafb8c3b0deafc3">Tiểu thuyết</Select.Option>
-                    </>
+                  
+                  <Select.Option value="" disabled>
+                    Không có danh mục
+                  </Select.Option>
                   )}
                 </Select>
               )}

@@ -1,8 +1,9 @@
 import { Button, Form, Input, InputNumber, message, Select, Row, Col } from 'antd';
 import { useNavigate } from 'react-router';
+import api from '@/config/axios.customize'; // instance axios đã cấu hình baseURL
 
 interface IVariant {
-  product_id: number;
+  product_id: string; 
   variant_name: string;
   price: number;
   stock_quantity: number;
@@ -13,15 +14,31 @@ const AddVariant = () => {
   const nav = useNavigate();
   const [form] = Form.useForm();
   const productOptions = [
-    { label: "Sách Tâm lý học", value: 101 },
-    { label: "Sách Phát triển bản thân", value: 102 },
-    { label: "Sách Lãng mạn", value: 103 },
+    { label: "Sách Tâm lý học", value: "650f1c5e0f1c2b1a3c456789" },
+    { label: "Sách Phát triển bản thân", value: "650f1c5e0f1c2b1a3c456790" },
+    { label: "Sách Lãng mạn", value: "650f1c5e0f1c2b1a3c456791" },
   ];
 
-  const onFinish = (values: IVariant) => {
-    console.log("Variant:", values);
-    message.success("Thêm biến thể thành công");
-    nav("/variants");
+  const onFinish = async (values: IVariant) => {
+    try {
+      const payload = {
+        product: values.product_id,                     // ObjectId hợp lệ
+        type: 'paperback| pareback',                              // hoặc 'hardcover'
+        price: Number(values.price) || 0,              // đảm bảo là number
+        stock: Number(values.stock_quantity) || 0,     // map stock_quantity → stock
+        images: values.image_url ? [values.image_url] : [], // map image_url → images[]
+      };
+
+      const res = await api.post('/variants', payload); // Gọi API backend
+      console.log("Variant created:", res.data);
+
+      message.success("Thêm biến thể thành công");
+      nav("/variants"); // Chuyển về danh sách biến thể
+    } catch (err: any) {
+      console.error("Add variant error:", err);
+      const msg = err?.response?.data?.message || "Có lỗi xảy ra";
+      message.error(msg);
+    }
   };
 
   return (
@@ -33,31 +50,28 @@ const AddVariant = () => {
         style={{ maxWidth: 600, margin: '0 auto' }}
       >
         <Row gutter={16}>
-            <Col span={12}>
-                <Form.Item
-                    label="Sản phẩm"
-                    name="product_id"
-                    rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
-                >
-                    <Select
-                        placeholder="Chọn sản phẩm"
-                        options={productOptions}
-                    />
-                </Form.Item>
-            </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Sản phẩm"
+              name="product_id"
+              rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
+            >
+              <Select placeholder="Chọn sản phẩm" options={productOptions} />
+            </Form.Item>
+          </Col>
 
-            <Col span={12}>
-                <Form.Item
-                label="Tên biến thể"
-                name="variant_name"
-                rules={[
-                    { required: true, message: 'Vui lòng nhập tên biến thể' },
-                    { min: 3, message: 'Ít nhất 3 ký tự' }
-                ]}
-                >
-                <Input placeholder="VD: Sách bìa mềm" />
-                </Form.Item>
-            </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Tên biến thể"
+              name="variant_name"
+              rules={[
+                { required: true, message: 'Vui lòng nhập tên biến thể' },
+                { min: 3, message: 'Ít nhất 3 ký tự' }
+              ]}
+            >
+              <Input placeholder="VD: Sách bìa mềm" />
+            </Form.Item>
+          </Col>
         </Row>
 
         <Form.Item

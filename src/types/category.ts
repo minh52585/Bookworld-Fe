@@ -1,7 +1,7 @@
 export interface ICategory {
+  id: string;
   _id:string
   name: string;
-  slug: string;
   description: string;
   status: string;
 }

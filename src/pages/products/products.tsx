@@ -62,7 +62,7 @@ const ProductsPage = () => {
       <Table
         dataSource={Array.isArray(data) ? data : []}
         columns={columns}
-        rowKey={record => record._id} // đảm bảo mỗi row có key duy nhất
+        rowKey={record => record._id} 
         pagination={{ pageSize: 3 }}
       />
     </>
