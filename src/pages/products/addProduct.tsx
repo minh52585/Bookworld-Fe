@@ -20,12 +20,11 @@ const ProductsAdd = () => {
   const [loadingCats, setLoadingCats] = useState<boolean>(false)
 
   // Lấy category từ BE (trả về [{_id, name}, ...])
-      useEffect(() => {
+  useEffect(() => {
     const fetchCats = async () => {
       setLoadingCats(true)
       try {
         const res = await api.get('/categories')
-        // API của bạn trả về { data: { items: [...] } }
         const list = res.data.data?.items || []
         setCats(Array.isArray(list) ? list : [])
       } catch (err) {
@@ -38,7 +37,6 @@ const ProductsAdd = () => {
     }
     fetchCats()
   }, [])
-
 
   // upload lên Cloudinary (POST)
   const uploadImage = async (file: File) => {
@@ -53,10 +51,8 @@ const ProductsAdd = () => {
         'https://api.cloudinary.com/v1_1/dkpfaleot/image/upload',
         formData
       )
-      // Cloudinary trả về data.secure_url hoặc data.url, tùy
       const url = data.secure_url || data.url
       setImage(url)
-      // LƯU DẠNG MẢNG vì BE yêu cầu images: [String]
       form.setFieldsValue({ images: [url] })
       setLoading(false)
       return url
@@ -81,27 +77,19 @@ const ProductsAdd = () => {
 
   const onFinish = async (values: any) => {
     try {
-      // Debug: log client-side trước khi gửi
       console.log('Will send payload:', values)
 
-      // ép kiểu an toàn
       const payload: any = { ...values }
       if (payload.price !== undefined) payload.price = Number(payload.price)
       if (payload.quantity !== undefined) payload.quantity = Number(payload.quantity)
-
-      // đảm bảo images là array
       if (!payload.images) payload.images = []
       if (typeof payload.images === 'string') payload.images = [payload.images]
 
-      // category phải là ObjectId string; nếu bạn tạm dùng tên thì BE sẽ 400
-      // status phải là "active" hoặc "inactive"
-      // gửi
       const res = await api.post('/products', payload)
       message.success('Thêm sản phẩm thành công!')
       nav('/products')
     } catch (err: any) {
       console.error('API error', err)
-      // show lỗi server nếu có
       const serverMsg = err?.response?.data?.message || err?.response?.data || err.message
       message.error(`Thất bại: ${serverMsg}`)
     }
@@ -129,6 +117,23 @@ const ProductsAdd = () => {
               <Input placeholder="VD: Đắc nhân tâm" />
             </Form.Item>
           </Col>
+
+          {/* Thêm tác giả */}
+          <Col span={12}>
+            <Form.Item
+              label="Tác giả"
+              name='author'
+              rules={[
+                { required: true, message: 'Vui lòng nhập tên tác giả' },
+                { min: 2, message: 'Tên tác giả ít nhất 2 ký tự' }
+              ]}
+            >
+              <Input placeholder="VD: Dale Carnegie" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label="Danh mục"
@@ -146,18 +151,14 @@ const ProductsAdd = () => {
                       </Select.Option>
                     ))
                   ) : (
-                  
-                  <Select.Option value="" disabled>
-                    Không có danh mục
-                  </Select.Option>
+                    <Select.Option value="" disabled>
+                      Không có danh mục
+                    </Select.Option>
                   )}
                 </Select>
               )}
             </Form.Item>
           </Col>
-        </Row>
-
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label="Giá tiền"
@@ -170,6 +171,9 @@ const ProductsAdd = () => {
               <InputNumber placeholder="VD: 50000" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
+        </Row>
+
+        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label="Số lượng"
@@ -182,14 +186,15 @@ const ProductsAdd = () => {
               <InputNumber placeholder="VD: 50" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
+          <Col span={12}>
+            <Form.Item label="Trạng thái" name='status' initialValue="active">
+              <Select>
+                <Select.Option value="active">Sẵn</Select.Option>
+                <Select.Option value="inactive">Hết</Select.Option>
+              </Select>
+            </Form.Item>
+          </Col>
         </Row>
-
-        <Form.Item label="Trạng thái" name='status' initialValue="active">
-          <Select>
-            <Select.Option value="active">Sẵn</Select.Option>
-            <Select.Option value="inactive">Hết</Select.Option>
-          </Select>
-        </Form.Item>
 
         <div style={{ display: 'flex', alignItems: 'start', gap: 20 }}>
           <Form.Item label="Ảnh">

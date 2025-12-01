@@ -15,6 +15,15 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
     dataIndex: 'name',
     key: 'name'
   },
+
+  // Thêm cột Tác giả
+  {
+    title: 'Tác giả',
+    dataIndex: 'author',
+    key: 'author',
+    render: (author: string) => author || ''
+  },
+
   {
     title: 'Mô tả',
     key: 'description',
@@ -30,14 +39,12 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
     dataIndex: 'quantity',
     key: 'quantity'
   },
-
   {
     title: 'Danh mục',
     dataIndex: 'category',
     key: 'category',
     render: (category: any) => category?.name || category || ''
   },
-
   {
     title: 'Hình ảnh',
     dataIndex: 'images',

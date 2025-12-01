@@ -1,10 +1,11 @@
 import { Button, Form, Input, InputNumber, message, Select, Row, Col } from 'antd';
 import { useNavigate } from 'react-router';
-import api from '@/config/axios.customize'; // instance axios đã cấu hình baseURL
+import api from '@/config/axios.customize';
 
 interface IVariant {
-  product_id: string; 
+  product_id: string;
   variant_name: string;
+  type: 'paperback' | 'hardcover';
   price: number;
   stock_quantity: number;
   image_url: string;
@@ -13,27 +14,36 @@ interface IVariant {
 const AddVariant = () => {
   const nav = useNavigate();
   const [form] = Form.useForm();
+
   const productOptions = [
     { label: "Sách Tâm lý học", value: "650f1c5e0f1c2b1a3c456789" },
     { label: "Sách Phát triển bản thân", value: "650f1c5e0f1c2b1a3c456790" },
     { label: "Sách Lãng mạn", value: "650f1c5e0f1c2b1a3c456791" },
   ];
 
+  const typeOptions = [
+    { label: "Paperback", value: "paperback" },
+    { label: "Hardcover", value: "hardcover" },
+  ];
+
   const onFinish = async (values: IVariant) => {
     try {
       const payload = {
-        product: values.product_id,                     // ObjectId hợp lệ
-        type: 'paperback| pareback',                              // hoặc 'hardcover'
-        price: Number(values.price) || 0,              // đảm bảo là number
-        stock: Number(values.stock_quantity) || 0,     // map stock_quantity → stock
-        images: values.image_url ? [values.image_url] : [], // map image_url → images[]
+        product: values.product_id,
+        type: values.type.toLowerCase(),
+        price: Number(values.price),
+        stock: Number(values.stock_quantity),   // ✔ ĐÚNG VỚI BACKEND
+        images: values.image_url ? [values.image_url] : [], // ✔ BACKEND NHẬN LIST
+        // ❌ Không gửi variant_name vì backend không có field này
       };
 
-      const res = await api.post('/variants', payload); // Gọi API backend
+      console.log("Payload sent to backend:", payload);
+
+      const res = await api.post('/variants', payload);
       console.log("Variant created:", res.data);
 
       message.success("Thêm biến thể thành công");
-      nav("/variants"); // Chuyển về danh sách biến thể
+      nav("/variants");
     } catch (err: any) {
       console.error("Add variant error:", err);
       const msg = err?.response?.data?.message || "Có lỗi xảy ra";
@@ -42,69 +52,75 @@ const AddVariant = () => {
   };
 
   return (
-    <>
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinish}
-        style={{ maxWidth: 600, margin: '0 auto' }}
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={onFinish}
+      style={{ maxWidth: 600, margin: '0 auto' }}
+    >
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item
+            label="Sản phẩm"
+            name="product_id"
+            rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
+          >
+            <Select placeholder="Chọn sản phẩm" options={productOptions} />
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <Form.Item
+            label="Loại sách"
+            name="type"
+            rules={[{ required: true, message: "Vui lòng chọn loại sách" }]}
+          >
+            <Select placeholder="Chọn loại" options={typeOptions} />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item
+        label="Tên biến thể"
+        name="variant_name"
+        rules={[
+          { required: true, message: 'Vui lòng nhập tên biến thể' },
+          { min: 3, message: 'Ít nhất 3 ký tự' }
+        ]}
       >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Sản phẩm"
-              name="product_id"
-              rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
-            >
-              <Select placeholder="Chọn sản phẩm" options={productOptions} />
-            </Form.Item>
-          </Col>
+        <Input placeholder="VD: Sách bìa mềm" />
+      </Form.Item>
 
-          <Col span={12}>
-            <Form.Item
-              label="Tên biến thể"
-              name="variant_name"
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên biến thể' },
-                { min: 3, message: 'Ít nhất 3 ký tự' }
-              ]}
-            >
-              <Input placeholder="VD: Sách bìa mềm" />
-            </Form.Item>
-          </Col>
-        </Row>
+      <Form.Item
+        label="Giá tiền"
+        name="price"
+        rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
+      >
+        <InputNumber min={0} style={{ width: '100%' }} placeholder="VD: 150000" />
+      </Form.Item>
 
-        <Form.Item
-          label="Giá tiền"
-          name="price"
-          rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
-        >
-          <InputNumber min={0} style={{ width: '100%' }} placeholder="VD: 150000" />
-        </Form.Item>
+      <Form.Item
+        label="Tồn kho"
+        name="stock_quantity"
+        rules={[{ required: true, message: 'Vui lòng nhập số lượng tồn kho' }]}
+      >
+        <InputNumber min={0} style={{ width: '100%' }} placeholder="VD: 100" />
+      </Form.Item>
 
-        <Form.Item
-          label="Tồn kho"
-          name="stock_quantity"
-          rules={[{ required: true, message: 'Vui lòng nhập số lượng tồn kho' }]}
-        >
-          <InputNumber min={0} style={{ width: '100%' }} placeholder="VD: 100" />
-        </Form.Item>
+      <Form.Item
+        label="URL hình ảnh"
+        name="image_url"
+        rules={[{ required: true, message: 'Vui lòng nhập URL hình ảnh' }]}
+      >
+        <Input placeholder="VD: https://image.com/group8.jpg" />
+      </Form.Item>
 
-        <Form.Item
-          label="URL hình ảnh"
-          name="image_url"
-          rules={[{ required: true, message: 'Vui lòng nhập URL hình ảnh' }]}
-        >
-          <Input placeholder="VD: https://image.com/group8.jpg" />
-        </Form.Item>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Xác nhận
-          </Button>
-        </Form.Item>
-      </Form>
-    </>
+      <Form.Item>
+        <Button type="primary" htmlType="submit" block>
+          Xác nhận
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 
