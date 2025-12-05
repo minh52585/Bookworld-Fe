@@ -4,7 +4,6 @@ import api from '@/config/axios.customize';
 
 interface IVariant {
   product_id: string;
-  variant_name: string;
   type: 'paperback' | 'hardcover';
   price: number;
   stock_quantity: number;
@@ -28,21 +27,26 @@ const AddVariant = () => {
 
   const onFinish = async (values: IVariant) => {
     try {
+      // Tạo variant_name tự động dựa trên product + type
+      const productLabel = productOptions.find(p => p.value === values.product_id)?.label || "";
+      const variantName = `${values.type === "hardcover" ? "Bìa cứng" : "Bìa mềm"} - ${productLabel}`;
+
       const payload = {
         product: values.product_id,
-        type: values.type.toLowerCase(),
+        type: values.type,                       // giá trị đã đúng: 'paperback' | 'hardcover'
         price: Number(values.price),
-        stock: Number(values.stock_quantity),   // ✔ ĐÚNG VỚI BACKEND
-        images: values.image_url ? [values.image_url] : [], // ✔ BACKEND NHẬN LIST
-        // ❌ Không gửi variant_name vì backend không có field này
+        stock: Number(values.stock_quantity),    // ✔ Đúng với backend
+        images: values.image_url ? [values.image_url] : [], // ✔ Backend nhận list
+        // ❌ Không gửi variant_name, backend không có field này
       };
 
       console.log("Payload sent to backend:", payload);
+      console.log("Variant name (frontend only):", variantName);
 
       const res = await api.post('/variants', payload);
       console.log("Variant created:", res.data);
 
-      message.success("Thêm biến thể thành công");
+      message.success(`Thêm biến thể thành công: ${variantName}`);
       nav("/variants");
     } catch (err: any) {
       console.error("Add variant error:", err);
@@ -79,17 +83,6 @@ const AddVariant = () => {
           </Form.Item>
         </Col>
       </Row>
-
-      <Form.Item
-        label="Tên biến thể"
-        name="variant_name"
-        rules={[
-          { required: true, message: 'Vui lòng nhập tên biến thể' },
-          { min: 3, message: 'Ít nhất 3 ký tự' }
-        ]}
-      >
-        <Input placeholder="VD: Sách bìa mềm" />
-      </Form.Item>
 
       <Form.Item
         label="Giá tiền"

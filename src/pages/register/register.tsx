@@ -19,7 +19,7 @@ const Register = () => {
 
   const onFinish = async (values: IRegister) => {
     try {
-      await api.post('api/register', values)
+      await api.post('/register', values)
       message.success('Đăng ký thành công!')
       const userData = {
         ...values,
