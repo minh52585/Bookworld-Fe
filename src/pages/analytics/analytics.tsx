@@ -11,8 +11,6 @@ const Analytics = () => {
     dateRange: null,
     productId: null,
   });
-
-  // Fake data (thay bằng API backend)
   const revenueData = [
     { date: "2025-01-01", revenue: 1200000 },
     { date: "2025-01-02", revenue: 2400000 },
@@ -45,8 +43,6 @@ const Analytics = () => {
   return (
     <div style={{ padding: 20 }}>
       <Title level={3}>Thống kê doanh thu</Title>
-
-      {/* Bộ lọc */}
       <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
           <Col span={8}>
@@ -78,8 +74,6 @@ const Analytics = () => {
           </Col>
         </Row>
       </Card>
-
-      {/* Tổng quan */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
         <Col span={6}>
           <Card>
@@ -115,14 +109,10 @@ const Analytics = () => {
           </Card>
         </Col>
       </Row>
-
-      {/* Biểu đồ doanh thu theo ngày */}
       <Card style={{ marginBottom: 20 }}>
         <Title level={5}>Doanh thu theo ngày</Title>
         <Line {...lineConfig} />
       </Card>
-
-      {/* Biểu đồ doanh thu theo sản phẩm */}
       <Card>
         <Title level={5}>Doanh thu theo từng sản phẩm</Title>
         <Bar {...barConfig} />
