@@ -11,13 +11,35 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
   { title: 'Năm XB', dataIndex: 'namxuatban', key: 'namxuatban', width: 100 },
   { title: 'NXB', dataIndex: 'nhaxuatban', key: 'nhaxuatban', width: 140 },
   { title: 'Số trang', dataIndex: 'sotrang', key: 'sotrang', width: 100 },
-  { title: 'Giá tiền', key: 'price', width: 120, render: (record: any) => record.price?.toLocaleString('vi-VN') + ' đ' },
-  { title: 'Số lượng', key: 'quantity', width: 100, render: (record: any) => record.quantity ?? '' },
+  { 
+    title: 'Giá tiền', 
+    key: 'price', 
+    width: 120, 
+    render: (record: any) => `${Number(record.price || 0).toLocaleString('vi-VN')} ₫`
+  },
+  { 
+    title: 'Số lượng', 
+    key: 'quantity', 
+    width: 100, 
+    render: (record: any) => record.quantity != null ? record.quantity : 0
+  },
   { title: 'Khối lượng', dataIndex: 'weight', key: 'weight', width: 100 },
   { title: 'Kích thước', dataIndex: 'size', key: 'size', width: 120 },
   { title: 'SKU', dataIndex: 'sku', key: 'sku', width: 120 },
-  { title: 'Mô tả', dataIndex: 'description', key: 'description', width: 200, render: (text: string) => text || '' },
-  { title: 'Danh mục', dataIndex: 'category', key: 'category', width: 140,   render: (cat: any) => cat?.name || 'Chưa phân loại',  },
+  { 
+    title: 'Mô tả', 
+    dataIndex: 'description', 
+    key: 'description', 
+    width: 200, 
+    render: (text: string) => text ? (text.length > 50 ? text.slice(0,50)+'...' : text) : ''
+  },
+  { 
+    title: 'Danh mục', 
+    dataIndex: 'category', 
+    key: 'category', 
+    width: 140,   
+    render: (cat: any) => cat?.name || 'Chưa phân loại',  
+  },
   { 
     title: 'Hình ảnh', 
     dataIndex: 'images', 
@@ -25,7 +47,9 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
     width: 100, 
     render: (images: string[]) => images?.[0] ? (
       <img src={images[0]} width={50} height={50} style={{ objectFit: 'cover', borderRadius: 4 }} />
-    ) : null,
+    ) : (
+      <div style={{ width: 50, height: 50, backgroundColor: '#f0f0f0', borderRadius: 4, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#999' }}>Chưa có</div>
+    ),
   },
   { 
     title: 'Trạng thái', 
