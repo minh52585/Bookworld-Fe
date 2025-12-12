@@ -9,18 +9,27 @@ const Category = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-  queryKey: ['category'],
-  queryFn: async () => {
-    try {
-      const res = await api.get('/categories');
-      console.log('API categories:', res.data); 
-      return Array.isArray(res.data.data?.items) ? res.data.data.items : [];
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
-  },
-});
+    queryKey: ['categories'],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/categories');
+        console.log('API categories:', res.data);
+        // Hỗ trợ nhiều dạng response từ BE:
+        // - res.data.data.items (pagination)
+        // - res.data.data (array)
+        // - res.data (array)
+        const d = res.data;
+        if (Array.isArray(d)) return d;
+        if (Array.isArray(d?.data)) return d.data;
+        if (Array.isArray(d?.data?.items)) return d.data.items;
+        if (Array.isArray(d?.items)) return d.items;
+        return [];
+      } catch (error) {
+        console.error(error);
+        return [];
+      }
+    },
+  });
 
 
   const mutation = useMutation({

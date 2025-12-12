@@ -15,31 +15,60 @@ const ProductsUpdate = () => {
     }
   }
   const { id } = useParams()
-  const { data } = useQuery<IProducts[]>({
+  const { data } = useQuery({
     queryKey: ['products', id],
     queryFn: async () => {
       try {
-        const { data } = await api.get(`api/products/${id}`)
-        console.log('Data:', data)
-        return Array.isArray(data.data) ? data.data : [data.data]
+        const res = await api.get(`/products/${id}`)
+        return res.data?.data ?? res.data
       } catch (error) {
         console.log(error)
-        return []
+        return null
       }
     }
   })
+
   const [form] = Form.useForm()
+
+  // ================== FIX QUAN TRỌNG: load product vào form ==================
   useEffect(() => {
-    if (data && data[0]) {
+    if (data) {
       form.setFieldsValue({
-        ...data[0]
+        ...data
       })
+
+      // load ảnh có sẵn trong product
+      if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+        setImage(data.images[0])
+      }
     }
-  }, [ data ] )
+  }, [data])
+  // ===========================================================================
+
   const nav = useNavigate()
   const { TextArea } = Input
   const [image, setImage] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [cats, setCats] = useState<any[]>([])
+  const [loadingCats, setLoadingCats] = useState<boolean>(false)
+
+  // Load categories
+  useEffect(() => {
+    const fetchCats = async () => {
+      setLoadingCats(true)
+      try {
+        const res = await api.get('/categories')
+        const list = res.data?.data?.items || res.data?.data || res.data || []
+        setCats(Array.isArray(list) ? list : [])
+      } catch (err) {
+        console.error('Fetch categories error', err)
+        setCats([])
+      } finally {
+        setLoadingCats(false)
+      }
+    }
+    fetchCats()
+  }, [])
 
   const uploadImage = async (file: File) => {
     if (!file) return
@@ -50,12 +79,16 @@ const ProductsUpdate = () => {
     formData.append('upload_preset', 'reacttest')
 
     try {
-      const { data } = await axios.put(
+      const { data } = await axios.post(
         'https://api.cloudinary.com/v1_1/dkpfaleot/image/upload',
         formData
       )
-      setImage(data.url)
-      form.setFieldsValue({ images: data.url })
+      const url = data.secure_url || data.url
+      setImage(url)
+
+      // update field images
+      form.setFieldsValue({ images: [url] })
+
       setLoading(false)
     } catch (error) {
       console.error('Tải hình ảnh lên thất bại:', error)
@@ -65,12 +98,37 @@ const ProductsUpdate = () => {
 
   const onFinish = async (values: IProducts) => {
     try {
-      await api.put(`api/products/${id}`, values)
+      // Chuẩn hoá payload trước khi gửi: đảm bảo number/array đúng kiểu
+      const payload: any = { ...values }
+      if (payload.price !== undefined) payload.price = Number(payload.price)
+      if (payload.quantity !== undefined) payload.quantity = Number(payload.quantity)
+
+      // images có thể là string hoặc array
+      if (payload.images) {
+        if (typeof payload.images === 'string') payload.images = [payload.images]
+        else if (!Array.isArray(payload.images)) payload.images = [payload.images]
+      } else if (image) {
+        // nếu form không có images nhưng có ảnh preview, thêm vào
+        payload.images = [image]
+      }
+
+      // Log payload để debug (xem Network và Console)
+      console.log('PUT payload:', payload)
+
+      await api.put(`/products/${id}`, payload)
       message.success('Cập nhật sản phẩm thành công!')
       nav('/products')
-    } catch (err) {
-      console.error(err)
-      message.error('Cập nhật sản phẩm thất bại!')
+    } catch (err: any) {
+      console.error('Update product error:', err)
+      const resp = err?.response
+      // Hiển thị thông báo lỗi có chi tiết từ server nếu có
+      if (resp && resp.data) {
+        const serverMsg = resp.data.message || JSON.stringify(resp.data)
+        message.error(`Cập nhật sản phẩm thất bại: ${serverMsg}`)
+        console.error('Server response data:', resp.data)
+      } else {
+        message.error('Cập nhật sản phẩm thất bại: Lỗi mạng hoặc server')
+      }
     }
   }
 
@@ -90,11 +148,23 @@ const ProductsUpdate = () => {
           <Form.Item label="Danh mục" name='category' rules={[
             { required: true, message: 'Vui lòng chọn danh mục sản phẩm' }
           ]}>
-            <Select placeholder="-- Chọn --">
-              <Select.Option value="Lãng mạn">Lãng mạn</Select.Option>
-              <Select.Option value="Trinh thám">Trinh thám</Select.Option>
-              <Select.Option value="Tiểu thuyết">Tiểu thuyết</Select.Option>
-            </Select>
+            {loadingCats ? (
+              <Select placeholder="-- Chọn --" loading />
+            ) : (
+              <Select placeholder="-- Chọn --">
+                {cats.length ? (
+                  cats.map((c) => (
+                    <Select.Option key={c._id || c.id} value={c._id || c.id}>
+                      {c.name}
+                    </Select.Option>
+                  ))
+                ) : (
+                  <Select.Option value="" disabled>
+                    Không có danh mục
+                  </Select.Option>
+                )}
+              </Select>
+            )}
           </Form.Item>
         </Col>
       </Row>
@@ -118,10 +188,10 @@ const ProductsUpdate = () => {
         </Col>
       </Row>
 
-      <Form.Item label="Trạng thái" name='status' initialValue="Sẵn">
+      <Form.Item label="Trạng thái" name='status' initialValue="active">
         <Select>
-          <Select.Option value="Sẵn">Sẵn</Select.Option>
-          <Select.Option value="Hết">Hết</Select.Option>
+          <Select.Option value="active">Sẵn</Select.Option>
+          <Select.Option value="inactive">Hết</Select.Option>
         </Select>
       </Form.Item>
 
@@ -139,9 +209,9 @@ const ProductsUpdate = () => {
                 }}
                 customRequest={({ file, onSuccess }) => {
                     if (file instanceof File) {
-              uploadImage(file);
-            }
-                  setTimeout(() => onSuccess?.("ok"), 0)
+                      uploadImage(file);
+                    }
+                    setTimeout(() => onSuccess?.("ok"), 0)
                 }}
               >
                 {loading ? (
@@ -166,6 +236,7 @@ const ProductsUpdate = () => {
             <Input type="hidden" />
           </Form.Item>
         </Form.Item>
+
         <Form.Item label="Mô tả" name='description' style={{ flex: 1, marginBottom: 0 }} rules={[
           { required: true, message: 'Vui lòng nhập mô tả' },
           { min: 10, message: 'Mô tả chứa ít nhất 10 ký tự' }

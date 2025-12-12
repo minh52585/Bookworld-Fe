@@ -1,131 +1,119 @@
-import { Button, Form, Input, message, Select, Row, Col, InputNumber, Upload, Spin } from 'antd'
-import axios from 'axios'
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
-import { IProducts } from '../../types/product'
-import api from '@/config/axios.customize'
-import { LoadingOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Form, Input, InputNumber, Select, Row, Col, Upload, Spin, message } from 'antd';
+import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import api from '@/config/axios.customize';
+import axios from 'axios';
 
 const ProductsAdd = () => {
-  const formItemLayout = {
-    labelCol: { xs: { span: 24 }, sm: { span: 8 } }
-  }
-  const nav = useNavigate()
-  const [form] = Form.useForm()
-  const { TextArea } = Input
+  const [form] = Form.useForm();
+  const nav = useNavigate();
+  const { TextArea } = Input;
 
-  const [image, setImage] = useState<string>('') // preview single image
-  const [loading, setLoading] = useState<boolean>(false)
-  const [cats, setCats] = useState<any[]>([])
-  const [loadingCats, setLoadingCats] = useState<boolean>(false)
+  const [cats, setCats] = useState<any[]>([]);
+  const [loadingCats, setLoadingCats] = useState(false);
+  const [image, setImage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Lấy category từ BE (trả về [{_id, name}, ...])
+  // ✅ message hook
+  const [messageApi, contextHolder] = message.useMessage();
+
   useEffect(() => {
     const fetchCats = async () => {
-      setLoadingCats(true)
+      setLoadingCats(true);
       try {
-        const res = await api.get('/categories')
-        const list = res.data.data?.items || []
-        setCats(Array.isArray(list) ? list : [])
+        const res = await api.get('/categories');
+        setCats(res.data.data.items || []);
       } catch (err) {
-        console.error('Fetch categories error', err)
-        message.error('Không lấy được danh mục.')
-        setCats([])
+        messageApi.error('Không lấy được danh mục');
       } finally {
-        setLoadingCats(false)
+        setLoadingCats(false);
       }
-    }
-    fetchCats()
-  }, [])
+    };
+    fetchCats();
+  }, []);
 
-  // upload lên Cloudinary (POST)
   const uploadImage = async (file: File) => {
-    if (!file) return
-    setLoading(true)
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('upload_preset', 'reacttest') // giữ preset của bạn
+    if (!file) return;
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'reacttest'); 
 
     try {
-      const { data } = await axios.post(
-        'https://api.cloudinary.com/v1_1/dkpfaleot/image/upload',
-        formData
-      )
-      const url = data.secure_url || data.url
-      setImage(url)
-      form.setFieldsValue({ images: [url] })
-      setLoading(false)
-      return url
-    } catch (error: any) {
-      console.error('Upload error', error)
-      message.error('Upload ảnh thất bại')
-      setLoading(false)
-      throw error
-    }
-  }
-
-  // xử lý customRequest của antd Upload
-  const customUpload = async ({ file, onSuccess, onError }: any) => {
-    if (!(file instanceof File)) return
-    try {
-      await uploadImage(file)
-      onSuccess && onSuccess('ok')
+      const { data } = await axios.post('https://api.cloudinary.com/v1_1/dkpfaleot/image/upload', formData);
+      const url = data.secure_url || data.url;
+      setImage(url);
+      form.setFieldsValue({ images: [url] });
+      setLoading(false);
+      return url;
     } catch (err) {
-      onError && onError(err)
+      messageApi.error('Upload ảnh thất bại');
+      setLoading(false);
+      throw err;
     }
-  }
+  };
+
+  const customUpload = async ({ file, onSuccess, onError }: any) => {
+    if (!(file instanceof File)) return;
+    try {
+      await uploadImage(file);
+      onSuccess && onSuccess('ok');
+    } catch (err) {
+      onError && onError(err);
+    }
+  };
 
   const onFinish = async (values: any) => {
+    // ✅ log payload trước khi gửi
+    const payload = {
+      ...values,
+      price: Number(values.price),
+      quantity: Number(values.quantity),
+      weight: Number(values.weight || 0),
+      namxuatban: Number(values.namxuatban),
+      sotrang: Number(values.sotrang),
+      images: values.images || [],
+    };
+
     try {
-      console.log('Will send payload:', values)
-
-      const payload: any = { ...values }
-      if (payload.price !== undefined) payload.price = Number(payload.price)
-      if (payload.quantity !== undefined) payload.quantity = Number(payload.quantity)
-      if (!payload.images) payload.images = []
-      if (typeof payload.images === 'string') payload.images = [payload.images]
-
-      const res = await api.post('/products', payload)
-      message.success('Thêm sản phẩm thành công!')
-      nav('/products')
+      await api.post('/products', payload);
+      messageApi.success('Thêm sản phẩm thành công!');
+      nav('/products');
     } catch (err: any) {
-      console.error('API error', err)
-      const serverMsg = err?.response?.data?.message || err?.response?.data || err.message
-      message.error(`Thất bại: ${serverMsg}`)
+      messageApi.error(err?.response?.data?.message || 'Thêm sản phẩm thất bại!');
     }
-  }
+  };
 
   return (
     <>
+      {contextHolder} {/* ✅ message context */}
       <Form
         form={form}
         onFinish={onFinish}
-        {...formItemLayout}
-        layout='vertical'
+        layout="vertical"
         style={{ maxWidth: 800, margin: '0 auto' }}
       >
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label="Tên"
-              name='name'
+              name="name"
               rules={[
-                { required: true, message: 'Vui lòng nhập tên sản phẩm' },
-                { min: 3, message: 'Tên sản phẩm chứa ít nhất 3 ký tự' }
+                { required: true, message: 'Vui lòng nhập tên' },
+                { min: 3, message: 'Ít nhất 3 ký tự' },
               ]}
             >
               <Input placeholder="VD: Đắc nhân tâm" />
             </Form.Item>
           </Col>
-
-          {/* Thêm tác giả */}
           <Col span={12}>
             <Form.Item
               label="Tác giả"
-              name='author'
+              name="author"
               rules={[
-                { required: true, message: 'Vui lòng nhập tên tác giả' },
-                { min: 2, message: 'Tên tác giả ít nhất 2 ký tự' }
+                { required: true, message: 'Vui lòng nhập tác giả' },
+                { min: 2, message: 'Ít nhất 2 ký tự' },
               ]}
             >
               <Input placeholder="VD: Dale Carnegie" />
@@ -137,38 +125,29 @@ const ProductsAdd = () => {
           <Col span={12}>
             <Form.Item
               label="Danh mục"
-              name='category'
-              rules={[{ required: true, message: 'Vui lòng chọn danh mục sản phẩm' }]}
+              name="category"
+              rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
             >
               {loadingCats ? (
                 <Spin />
               ) : (
                 <Select placeholder="-- Chọn --">
-                  {cats.length ? (
-                    cats.map((c) => (
-                      <Select.Option key={c._id || c.id} value={c._id || c.id}>
-                        {c.name}
-                      </Select.Option>
-                    ))
-                  ) : (
-                    <Select.Option value="" disabled>
-                      Không có danh mục
+                  {cats.map(c => (
+                    <Select.Option key={c._id} value={c._id}>
+                      {c.name}
                     </Select.Option>
-                  )}
+                  ))}
                 </Select>
               )}
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="Giá tiền"
-              name='price'
-              rules={[
-                { required: true, message: 'Vui lòng nhập giá tiền' },
-                { type: 'number', message: 'Giá sản phẩm phải là số' }
-              ]}
+              label="Năm XB"
+              name="namxuatban"
+              rules={[{ required: true, message: 'Vui lòng nhập năm xuất bản' }]}
             >
-              <InputNumber placeholder="VD: 50000" style={{ width: '100%' }} />
+              <InputNumber style={{ width: '100%' }} placeholder="VD: 2020" />
             </Form.Item>
           </Col>
         </Row>
@@ -176,43 +155,73 @@ const ProductsAdd = () => {
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="Số lượng"
-              name='quantity'
-              rules={[
-                { required: true, message: 'Vui lòng nhập số lượng trong kho' },
-                { type: 'number', message: 'Số lượng phải là số' }
-              ]}
+              label="Nhà xuất bản"
+              name="nhaxuatban"
+              rules={[{ required: true, message: 'Vui lòng nhập nhà xuất bản' }]}
             >
-              <InputNumber placeholder="VD: 50" style={{ width: '100%' }} />
+              <Input placeholder="VD: NXB Trẻ" />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Trạng thái" name='status' initialValue="active">
-              <Select>
-                <Select.Option value="active">Sẵn</Select.Option>
-                <Select.Option value="inactive">Hết</Select.Option>
-              </Select>
+            <Form.Item
+              label="Số trang"
+              name="sotrang"
+              rules={[{ required: true, message: 'Vui lòng nhập số trang' }]}
+            >
+              <InputNumber style={{ width: '100%' }} placeholder="VD: 350" />
             </Form.Item>
           </Col>
         </Row>
 
-        <div style={{ display: 'flex', alignItems: 'start', gap: 20 }}>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Giá tiền"
+              name="price"
+              rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
+            >
+              <InputNumber style={{ width: '100%' }} placeholder="VD: 50000" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Số lượng"
+              name="quantity"
+              rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+            >
+              <InputNumber style={{ width: '100%' }} placeholder="VD: 50" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item label="Khối lượng (gram)" name="weight">
+              <InputNumber style={{ width: '100%' }} placeholder="VD: 500" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item label="Kích thước" name="size">
+              <Input placeholder="VD: 20 x 13 x 2 cm" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item label="SKU" name="sku">
+              <Input placeholder="VD: SP001" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <div style={{ display: 'flex', gap: 20 }}>
           <Form.Item label="Ảnh">
             <Upload
               listType="picture-card"
               showUploadList={false}
-              beforeUpload={(file) => {
-                const isImage = file.type.startsWith('image/')
-                if (!isImage) message.error('Chỉ được tải lên hình ảnh!')
-                return isImage || Upload.LIST_IGNORE
-              }}
+              beforeUpload={file => file.type.startsWith('image/') || Upload.LIST_IGNORE}
               customRequest={customUpload}
             >
               {loading ? (
-                <div>
-                  <LoadingOutlined />
-                  <div style={{ marginTop: 8 }}>Đang tải...</div>
-                </div>
+                <LoadingOutlined />
               ) : image ? (
                 <img
                   src={image}
@@ -222,11 +231,10 @@ const ProductsAdd = () => {
               ) : (
                 <div>
                   <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                  <div>Tải ảnh</div>
                 </div>
               )}
             </Upload>
-
             <Form.Item name="images" style={{ display: 'none' }}>
               <Input type="hidden" />
             </Form.Item>
@@ -234,11 +242,11 @@ const ProductsAdd = () => {
 
           <Form.Item
             label="Mô tả"
-            name='description'
+            name="description"
             style={{ flex: 1, marginBottom: 0 }}
             rules={[
               { required: true, message: 'Vui lòng nhập mô tả' },
-              { min: 10, message: 'Mô tả chứa ít nhất 10 ký tự' }
+              { min: 10, message: 'Ít nhất 10 ký tự' },
             ]}
           >
             <TextArea rows={4} placeholder="Mô tả hiển thị" />
@@ -252,7 +260,7 @@ const ProductsAdd = () => {
         </Form.Item>
       </Form>
     </>
-  )
-}
+  );
+};
 
-export default ProductsAdd
+export default ProductsAdd;

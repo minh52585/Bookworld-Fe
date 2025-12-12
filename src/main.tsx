@@ -9,7 +9,7 @@ import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { ConfigProvider } from 'antd' // ✅ Thêm import này
+import { App } from 'antd'   // 👈 Quan trọng: dùng App, không phải ConfigProvider
 
 const queryClient = new QueryClient()
 
@@ -19,9 +19,12 @@ createRoot(document.getElementById('root')!).render(
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <QueryClientProvider client={queryClient}>
-            <ConfigProvider> 
+
+            {/* 👇 ĐÚNG CHUẨN ANTD V5 */}
+            <App>
               <Providers />
-            </ConfigProvider>
+            </App>
+
             <ToastContainer
               position="top-center"
               autoClose={5000}

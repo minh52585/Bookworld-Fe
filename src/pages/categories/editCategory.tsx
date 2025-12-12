@@ -6,35 +6,43 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 const EditCategory = () => {
-  const { id } = useParams()
+  const { id } = useParams();
   const { data } = useQuery({
-    queryKey: ['category', id],
+    queryKey: ['categories', id],
     queryFn: async () => {
       try {
-        const { data } = await api.get(`api/categories/${id}`)
-        console.log('DATA', data)
-        return Array.isArray(data.data) ? data.data : [data.data]
+        const res = await api.get(`/categories/${id}`);
+        console.log('DATA', res.data);
+        // Trả về object category (không phải array)
+        return res.data?.data ?? res.data;
       } catch (error) {
-        console.log(error)
+        console.log(error);
+        return null;
       }
-    }
-  })
+    },
+  });
+
   useEffect(() => {
-    if (data && data[0]) {
+    if (data) {
       form.setFieldsValue({
-        ...data[0]
-      })
+        ...data,
+      });
     }
-  }, [ data ] )
+  }, [data]);
   const { TextArea } = Input
   const nav = useNavigate()
   const [form] = Form.useForm()
   const onFinish = async (values: ICategory) => {
-    await api.put(`api/categories/${id}`, values)
-    console.log('Category:', values)
-    message.success('Sửa danh mục thành công!')
-    nav('/categories')
-  }
+    try {
+      await api.put(`/categories/${id}`, values);
+      console.log('Category:', values);
+      message.success('Sửa danh mục thành công!');
+      nav('/categories');
+    } catch (err: any) {
+      console.error(err);
+      message.error(err?.response?.data?.message || 'Cập nhật thất bại');
+    }
+  };
 
   return (
     <>
