@@ -70,20 +70,8 @@ const ProductsPage = () => {
     { title: 'Khối lượng (g)', dataIndex: 'weight', key: 'weight', width: 100 },
     { title: 'Kích thước', dataIndex: 'size', key: 'size', width: 120 },
     { title: 'SKU', dataIndex: 'sku', key: 'sku', width: 120 },
-    { 
-      title: 'Giá', 
-      dataIndex: 'price', 
-      key: 'price', 
-      width: 120,
-      render: (value: number) => value?.toLocaleString('vi-VN') + ' ₫',
-    },
-    { 
-      title: 'Số lượng', 
-      dataIndex: 'quantity', 
-      key: 'quantity', 
-      width: 100,
-      render: (value: number) => value ?? 0,
-    },
+    
+   
     { 
       title: 'Mô tả', 
       dataIndex: 'description', 

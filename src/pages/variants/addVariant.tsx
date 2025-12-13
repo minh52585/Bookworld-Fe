@@ -1,119 +1,206 @@
-import { Button, Form, Input, InputNumber, message, Select, Row, Col } from 'antd';
-import { useNavigate } from 'react-router';
-import api from '@/config/axios.customize';
+import { useEffect, useState } from "react";
+import {
+  Button,
+  Form,
+  InputNumber,
+  message,
+  Select,
+  Card,
+  Row,
+  Col,
+  Spin,
+} from "antd";
+import { useNavigate } from "react-router-dom";
+import api from "@/config/axios.customize";
 
-interface IVariant {
-  product_id: string;
-  type: 'paperback' | 'hardcover';
+interface IVariantForm {
+  productId: string;
+  type: "paperback" | "hardcover";
   price: number;
-  stock_quantity: number;
-  image_url: string;
+  quantity: number;
 }
 
 const AddVariant = () => {
-  const nav = useNavigate();
   const [form] = Form.useForm();
+  const navigate = useNavigate();
 
-  const productOptions = [
-    { label: "Sách Tâm lý học", value: "650f1c5e0f1c2b1a3c456789" },
-    { label: "Sách Phát triển bản thân", value: "650f1c5e0f1c2b1a3c456790" },
-    { label: "Sách Lãng mạn", value: "650f1c5e0f1c2b1a3c456791" },
-  ];
+  const [products, setProducts] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [loadingProduct, setLoadingProduct] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const typeOptions = [
-    { label: "Paperback", value: "paperback" },
-    { label: "Hardcover", value: "hardcover" },
-  ];
+  /* ================= LOAD PRODUCTS ================= */
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await api.get("/products");
+        setProducts(res.data.data.items);
+      } catch {
+        message.error("Không tải được danh sách sản phẩm");
+      }
+    };
+    fetchProducts();
+  }, []);
 
-  const onFinish = async (values: IVariant) => {
+  /* ================= SELECT PRODUCT ================= */
+const handleSelectProduct = async (productId: string) => {
+  try {
+    setLoadingProduct(true);
+    const res = await api.get(`/products/${productId}`);
+
+    // 🔥 FIX CHỐT
+    const product =
+      res.data?.data?.product ||
+      res.data?.data ||
+      res.data;
+
+    console.log("PRODUCT API 👉", product);
+    setSelectedProduct(product);
+  } catch (err) {
+    message.error("Không lấy được thông tin sản phẩm");
+    setSelectedProduct(null);
+  } finally {
+    setLoadingProduct(false);
+  }
+};
+
+
+  /* ================= SUBMIT ================= */
+  const onFinish = async (values: IVariantForm) => {
     try {
-      // Tạo variant_name tự động dựa trên product + type
-      const productLabel = productOptions.find(p => p.value === values.product_id)?.label || "";
-      const variantName = `${values.type === "hardcover" ? "Bìa cứng" : "Bìa mềm"} - ${productLabel}`;
+      setSubmitting(true);
 
       const payload = {
-        product: values.product_id,
-        type: values.type,                       // giá trị đã đúng: 'paperback' | 'hardcover'
+        product_id: values.productId,
+        type: values.type === "hardcover" ? "Bìa cứng" : "Bìa mềm",
         price: Number(values.price),
-        stock: Number(values.stock_quantity),    // ✔ Đúng với backend
-        images: values.image_url ? [values.image_url] : [], // ✔ Backend nhận list
-        // ❌ Không gửi variant_name, backend không có field này
+        quantity: Number(values.quantity),
+        status: "active",
       };
 
-      console.log("Payload sent to backend:", payload);
-      console.log("Variant name (frontend only):", variantName);
-
-      const res = await api.post('/variants', payload);
-      console.log("Variant created:", res.data);
-
-      message.success(`Thêm biến thể thành công: ${variantName}`);
-      nav("/variants");
+      await api.post("/variants", payload);
+      message.success("Thêm biến thể thành công");
+      navigate("/variants");
     } catch (err: any) {
-      console.error("Add variant error:", err);
-      const msg = err?.response?.data?.message || "Có lỗi xảy ra";
-      message.error(msg);
+      message.error(err?.response?.data?.message || "Có lỗi xảy ra");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={onFinish}
-      style={{ maxWidth: 600, margin: '0 auto' }}
-    >
-      <Row gutter={16}>
-        <Col span={12}>
-          <Form.Item
-            label="Sản phẩm"
-            name="product_id"
-            rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
-          >
-            <Select placeholder="Chọn sản phẩm" options={productOptions} />
-          </Form.Item>
-        </Col>
+    <Row justify="center">
+      <Col span={14}>
+        <Card title="Thêm biến thể sản phẩm">
+          <Form form={form} layout="vertical" onFinish={onFinish}>
+            {/* ================= PRODUCT ================= */}
+            <Form.Item
+              label="Sản phẩm"
+              name="productId"
+              rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
+            >
+             <Select
+              placeholder="Chọn sản phẩm"
+              showSearch
+              optionFilterProp="children"
+              onChange={(value) => {
+                console.log("SELECT VALUE 👉", value);
+                handleSelectProduct(value);
+              }}
+            >
+              {products.map((p) => (
+                <Select.Option key={p._id} value={p._id}>
+                  {p.name}
+                </Select.Option>
+              ))}
+            </Select>
+            </Form.Item>
 
-        <Col span={12}>
-          <Form.Item
-            label="Loại sách"
-            name="type"
-            rules={[{ required: true, message: "Vui lòng chọn loại sách" }]}
-          >
-            <Select placeholder="Chọn loại" options={typeOptions} />
-          </Form.Item>
-        </Col>
-      </Row>
+            {/* ================= PRODUCT INFO ================= */}
+            {selectedProduct && (
+              <Spin spinning={loadingProduct}>
+                <Card
+                  size="small"
+                  title="Thông tin sản phẩm"
+                  style={{ marginBottom: 16 }}
+                >
+                  <p><b>Tên:</b> {selectedProduct.name}</p>
+                  <p><b>Tác giả:</b> {selectedProduct.author}</p>
+                  <p><b>Năm XB:</b> {selectedProduct.namxuatban}</p>
+                  <p><b>NXB:</b> {selectedProduct.nhaxuatban}</p>
+                  <p><b>Số trang:</b> {selectedProduct.sotrang}</p>
+                  <p><b>Kích thước:</b> {selectedProduct.size}</p>
+                  <p><b>Khối lượng:</b> {selectedProduct.weight} g</p>
+                  <p><b>SKU:</b> {selectedProduct.sku}</p>
+                  <p><b>Mô tả:</b> {selectedProduct.description || "—"}</p>
 
-      <Form.Item
-        label="Giá tiền"
-        name="price"
-        rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
-      >
-        <InputNumber min={0} style={{ width: '100%' }} placeholder="VD: 150000" />
-      </Form.Item>
+                  {selectedProduct.images?.length > 0 && (
+                    <img
+                      src={selectedProduct.images[0]}
+                      alt={selectedProduct.name}
+                      style={{
+                        width: 120,
+                        marginTop: 10,
+                        borderRadius: 6,
+                      }}
+                    />
+                  )}
+                </Card>
+              </Spin>
+            )}
 
-      <Form.Item
-        label="Tồn kho"
-        name="stock_quantity"
-        rules={[{ required: true, message: 'Vui lòng nhập số lượng tồn kho' }]}
-      >
-        <InputNumber min={0} style={{ width: '100%' }} placeholder="VD: 100" />
-      </Form.Item>
+            <Form.Item
+              label="Loại sách"
+              name="type"
+              rules={[{ required: true, message: "Vui lòng chọn loại sách" }]}
+            >
+              <Select
+                placeholder="Chọn loại sách"
+                options={[
+                  { label: "Bìa mềm", value: "paperback" },
+                  { label: "Bìa cứng", value: "hardcover" },
+                ]}
+              />
+            </Form.Item>
 
-      <Form.Item
-        label="URL hình ảnh"
-        name="image_url"
-        rules={[{ required: true, message: 'Vui lòng nhập URL hình ảnh' }]}
-      >
-        <Input placeholder="VD: https://image.com/group8.jpg" />
-      </Form.Item>
+            <Form.Item
+              label="Giá"
+              name="price"
+              rules={[{ required: true, message: "Vui lòng nhập giá" }]}
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                min={0}
+                placeholder="VD: 150000"
+              />
+            </Form.Item>
 
-      <Form.Item>
-        <Button type="primary" htmlType="submit" block>
-          Xác nhận
-        </Button>
-      </Form.Item>
-    </Form>
+            <Form.Item
+              label="Số lượng"
+              name="quantity"
+              rules={[{ required: true, message: "Vui lòng nhập số lượng" }]}
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                min={0}
+                placeholder="VD: 100"
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+                block
+              >
+                Xác nhận
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
+      </Col>
+    </Row>
   );
 };
 

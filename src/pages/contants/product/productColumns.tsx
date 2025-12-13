@@ -11,18 +11,8 @@ export const getProductColumns = (queryClient: any, DelProduct: (id: string) => 
   { title: 'Năm XB', dataIndex: 'namxuatban', key: 'namxuatban', width: 100 },
   { title: 'NXB', dataIndex: 'nhaxuatban', key: 'nhaxuatban', width: 140 },
   { title: 'Số trang', dataIndex: 'sotrang', key: 'sotrang', width: 100 },
-  { 
-    title: 'Giá tiền', 
-    key: 'price', 
-    width: 120, 
-    render: (record: any) => `${Number(record.price || 0).toLocaleString('vi-VN')} ₫`
-  },
-  { 
-    title: 'Số lượng', 
-    key: 'quantity', 
-    width: 100, 
-    render: (record: any) => record.quantity != null ? record.quantity : 0
-  },
+  
+ 
   { title: 'Khối lượng', dataIndex: 'weight', key: 'weight', width: 100 },
   { title: 'Kích thước', dataIndex: 'size', key: 'size', width: 120 },
   { title: 'SKU', dataIndex: 'sku', key: 'sku', width: 120 },

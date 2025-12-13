@@ -70,8 +70,6 @@ const ProductsAdd = () => {
       // Ép kiểu đúng
       const payload = {
         ...values,
-        price: Number(values.price || 0),
-        quantity: Number(values.quantity || 0),
         weight: Number(values.weight || 0),
         namxuatban: Number(values.namxuatban || 0),
         sotrang: Number(values.sotrang || 0),
@@ -149,16 +147,6 @@ const ProductsAdd = () => {
         </Row>
 
         <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="Giá tiền" name="price" rules={[{ required: true, message: 'Vui lòng nhập giá' }]}>
-              <InputNumber style={{ width: '100%' }} placeholder="VD: 50000" />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item label="Số lượng" name="quantity" rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}>
-              <InputNumber style={{ width: '100%' }} placeholder="VD: 50" />
-            </Form.Item>
-          </Col>
           <Col span={8}>
             <Form.Item label="Trạng thái" name="status" valuePropName="checked">
               <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" defaultChecked />
