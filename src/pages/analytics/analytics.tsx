@@ -1,85 +1,140 @@
-import { useState } from "react";
-import { Card, DatePicker, Select, Button, Row, Col, Typography } from "antd";
-import { Line } from "@ant-design/plots";
-import { Bar } from "@ant-design/plots";
+import { useState, useEffect } from "react";
+import { Card, DatePicker, Select, Button, Row, Col, Typography, message } from "antd";
+import { Line, Bar } from "@ant-design/plots";
+import api from "../../config/axios.customize";
 
 const { RangePicker } = DatePicker;
 const { Title } = Typography;
 
 const Analytics = () => {
   const [filters, setFilters] = useState({
-    dateRange: null,
+    startDate: null,
+    endDate: null,
     productId: null,
   });
-  const revenueData = [
-    { date: "2025-01-01", revenue: 1200000 },
-    { date: "2025-01-02", revenue: 2400000 },
-    { date: "2025-01-03", revenue: 1900000 },
-    { date: "2025-01-04", revenue: 3000000 },
-  ];
 
-  const productRevenueData = [
-    { product: "Đắc Nhân Tâm", revenue: 9000000 },
-    { product: "Nhà Giả Kim", revenue: 6500000 },
-    { product: "7 Thói Quen", revenue: 3500000 },
-  ];
+  const [products, setProducts] = useState([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [bestProduct, setBestProduct] = useState("Không có");
+  const [dailyRevenue, setDailyRevenue] = useState([]);
+  const [productRevenue, setProductRevenue] = useState([]);
 
-  const lineConfig = {
-    data: revenueData,
-    xField: "date",
-    yField: "revenue",
-    smooth: true,
-    height: 300,
+  /** ============================
+   *  Lấy danh sách sản phẩm
+   ==============================*/
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get("/products?limit=1000");
+
+      const list =
+        res.data?.data?.items?.map((p: any) => ({
+          label: p.name,
+          value: p._id,
+        })) || [];
+
+      setProducts(list);
+    } catch (err) {
+      console.log("Product error:", err);
+      message.error("Không tải được danh sách sản phẩm");
+    }
   };
 
-  const barConfig = {
-    data: productRevenueData,
-    xField: "revenue",
-    yField: "product",
-    seriesField: "product",
-    height: 300,
+  /** ============================
+   *  Lấy dữ liệu thống kê
+   ==============================*/
+  const fetchAnalytics = async () => {
+    try {
+      const params: any = {};
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      if (filters.productId) params.productId = filters.productId;
+
+      /** ---- Tổng doanh thu ---- */
+      const revenueRes = await api.get("/analytics/revenue", { params });
+      const rev = revenueRes?.data?.data || {};
+
+      setTotalRevenue(rev.totalRevenue || 0);
+      setTotalOrders(rev.totalOrders || 0);
+
+      /** ---- Doanh thu theo sản phẩm ---- */
+      const productRes = await api.get("/analytics/revenue-by-product", { params });
+      const productData = productRes.data?.data || [];
+
+      setProductRevenue(productData);
+
+      if (productData.length > 0) {
+        setBestProduct(productData[0].productName || "Không có");
+      }
+
+      /** ---- Doanh thu theo ngày ---- */
+      const dailyRes = await api.get("/analytics/revenue-daily", { params });
+      const dailyData = dailyRes.data?.data || [];
+
+      setDailyRevenue(
+        dailyData.map((item: any) => ({
+          date: item._id,
+          revenue: item.totalRevenue,
+        }))
+      );
+    } catch (err) {
+      console.log("Analytics error:", err);
+      message.error("Không tải được dữ liệu thống kê");
+    }
   };
+
+  useEffect(() => {
+    fetchProducts();
+    fetchAnalytics();
+  }, []);
 
   return (
     <div style={{ padding: 20 }}>
       <Title level={3}>Thống kê doanh thu</Title>
+
+      {/* Bộ lọc */}
       <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
           <Col span={8}>
-            <label style={{ fontWeight: 500 }}>Lọc theo ngày</label>
+            <label>Lọc theo ngày</label>
             <RangePicker
               style={{ width: "100%", marginTop: 5 }}
-              onChange={(value) => setFilters({ ...filters, dateRange: value })}
+              onChange={(value) =>
+                setFilters({
+                  ...filters,
+                  startDate: value ? value[0].startOf("day").toISOString() : null,
+                  endDate: value ? value[1].endOf("day").toISOString() : null,
+                })
+              }
             />
           </Col>
 
           <Col span={8}>
-            <label style={{ fontWeight: 500 }}>Sản phẩm</label>
+            <label>Sản phẩm</label>
             <Select
               style={{ width: "100%", marginTop: 5 }}
               placeholder="Chọn sản phẩm"
+              allowClear
+              options={products}
               onChange={(value) => setFilters({ ...filters, productId: value })}
-              options={[
-                { label: "Đắc Nhân Tâm", value: 1 },
-                { label: "Nhà Giả Kim", value: 2 },
-                { label: "7 Thói Quen", value: 3 },
-              ]}
             />
           </Col>
 
           <Col span={8} style={{ display: "flex", alignItems: "flex-end" }}>
-            <Button type="primary" style={{ width: "100%" }}>
+            <Button type="primary" style={{ width: "100%" }} onClick={fetchAnalytics}>
               Lọc dữ liệu
             </Button>
           </Col>
         </Row>
       </Card>
+
+      {/* Cards */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
         <Col span={6}>
           <Card>
             <Title level={5}>Tổng doanh thu</Title>
             <Title level={3} style={{ color: "#1677ff" }}>
-              25.500.000₫
+              {totalRevenue.toLocaleString()}₫
             </Title>
           </Card>
         </Col>
@@ -88,7 +143,7 @@ const Analytics = () => {
           <Card>
             <Title level={5}>Tổng đơn hàng</Title>
             <Title level={3} style={{ color: "#52c41a" }}>
-              320 đơn
+              {totalOrders} đơn
             </Title>
           </Card>
         </Col>
@@ -96,7 +151,7 @@ const Analytics = () => {
         <Col span={6}>
           <Card>
             <Title level={5}>Sản phẩm bán chạy nhất</Title>
-            <Title level={4}>Đắc Nhân Tâm</Title>
+            <Title level={4}>{bestProduct}</Title>
           </Card>
         </Col>
 
@@ -104,18 +159,26 @@ const Analytics = () => {
           <Card>
             <Title level={5}>Tổng số sách bán ra</Title>
             <Title level={3} style={{ color: "#faad14" }}>
-              1.250 cuốn
+              {productRevenue.reduce(
+                (sum, p: any) => sum + (p.totalQuantitySold || 0),
+                0
+              )}{" "}
+              cuốn
             </Title>
           </Card>
         </Col>
       </Row>
+
+      {/* Chart theo ngày */}
       <Card style={{ marginBottom: 20 }}>
         <Title level={5}>Doanh thu theo ngày</Title>
-        <Line {...lineConfig} />
+        <Line data={dailyRevenue} xField="date" yField="revenue" smooth height={300} />
       </Card>
+
+      {/* Chart theo sản phẩm */}
       <Card>
         <Title level={5}>Doanh thu theo từng sản phẩm</Title>
-        <Bar {...barConfig} />
+        <Bar data={productRevenue} xField="totalRevenue" yField="productName" height={300} />
       </Card>
     </div>
   );
