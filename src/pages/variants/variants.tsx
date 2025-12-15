@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Popconfirm, Space, Table, message } from "antd";
+import { Button, Popconfirm, Space, Table, message, Select } from "antd";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "@/config/axios.customize";
@@ -17,39 +17,50 @@ interface Variant {
   status: string;
   createdAt: string;
   updatedAt: string;
-  image_url?: string; // optional nếu có trường ảnh
+  image_url?: string;
 }
 
 const Variants = () => {
   const [variants, setVariants] = useState<Variant[]>([]);
+  const [filteredVariants, setFilteredVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchVariants = async () => {
       try {
         setLoading(true);
         const res = await api.get("/variants");
-        console.log("API response:", res.data);
-
-        // Lấy mảng items từ API
         const items: Variant[] = res.data?.data?.items ?? [];
         setVariants(items);
+        setFilteredVariants(items);
       } catch (err) {
         console.error("Fetch variants error:", err);
         message.error("Lấy danh sách biến thể thất bại");
         setVariants([]);
+        setFilteredVariants([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchVariants();
   }, []);
+
+  // 🔹 Apply filters
+  useEffect(() => {
+    let temp = [...variants];
+    if (typeFilter) temp = temp.filter((v) => v.type === typeFilter);
+    if (statusFilter) temp = temp.filter((v) => v.status === statusFilter);
+    setFilteredVariants(temp);
+  }, [typeFilter, statusFilter, variants]);
 
   const onDelete = async (_id: string) => {
     try {
       await api.delete(`/variants/${_id}`);
-      setVariants((prev) => prev.filter((v) => v._id !== _id));
+      const newVariants = variants.filter((v) => v._id !== _id);
+      setVariants(newVariants);
       message.success("Xoá biến thể thành công");
     } catch (err) {
       console.error(err);
@@ -68,7 +79,8 @@ const Variants = () => {
       title: "Tên sản phẩm",
       dataIndex: "product_id",
       key: "product_name",
-      render: (product: any) => (product && typeof product !== "string" ? product.name : "-"),
+      render: (product: any) =>
+        product && typeof product !== "string" ? product.name : "-",
     },
     {
       title: "Loại",
@@ -92,7 +104,6 @@ const Variants = () => {
       dataIndex: "image_url",
       key: "image_url",
       render: (_: any, record: Variant) => {
-        // Ưu tiên ảnh của variant, nếu không có thì lấy ảnh đầu tiên của product
         const url =
           record.image_url ||
           (record.product_id &&
@@ -159,31 +170,47 @@ const Variants = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      {/* Header */}
+      {/* Header + Filters */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: 16,
+          gap: 12,
+          flexWrap: "wrap",
         }}
       >
         <h2>Danh sách biến thể</h2>
-        <Link to={`/variants/add`}>
-          <Button
-            icon={<PlusOutlined />}
-            type="primary"
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-          >
-            Thêm biến thể
-          </Button>
-        </Link>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Select
+            placeholder="Lọc theo loại"
+            style={{ width: 150 }}
+            allowClear
+            value={typeFilter || undefined}
+            onChange={(val) => setTypeFilter(val || null)}
+            options={[
+              { label: "Bìa mềm", value: "Bìa mềm" },
+              { label: "Bìa cứng", value: "Bìa cứng" },
+            ]}
+          />
+        
+          <Link to={`/variants/add`}>
+            <Button
+              icon={<PlusOutlined />}
+              type="primary"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              Thêm biến thể
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Table */}
       <Table
         columns={columns}
-        dataSource={variants}
+        dataSource={filteredVariants}
         rowKey={(record) => record._id}
         pagination={{ pageSize: 5 }}
         loading={loading}
