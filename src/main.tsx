@@ -26,17 +26,12 @@ createRoot(document.getElementById('root')!).render(
             </App>
 
             <ToastContainer
-              position="top-center"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick={false}
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
+            position="top-center"
+            autoClose={3000}
+            hideProgressBar={false}
+            pauseOnHover
+            theme="light"
+          />
             <ReactQueryDevtools initialIsOpen={false} />
           </QueryClientProvider>
         </PersistGate>

@@ -5,6 +5,8 @@ import { LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SettingOutlined, 
 import { Avatar, Button, Dropdown, MenuProps, Space, theme } from 'antd'
 import { Header } from 'antd/es/layout/layout'
 import { Link } from 'react-router'
+import { useNavigate } from 'react-router-dom'
+
 
 const items: MenuProps['items'] = [
   {
@@ -25,6 +27,7 @@ const items: MenuProps['items'] = [
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <LogoutOutlined />
           Đăng xuất
+
         </div>
       </Link>
     )

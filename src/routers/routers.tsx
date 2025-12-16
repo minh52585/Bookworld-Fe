@@ -25,13 +25,15 @@ import EditCoupon from '@/pages/coupons/editCoupon'
 import AddVariant from '@/pages/variants/addVariant'
 import EditVariant from '@/pages/variants/editVariant'
 import OrderDetails from '@/pages/orders/orderDetails'
+import AdminLogin from "@/pages/adminLogin/adminLogin";
+import AdminProtectedRoute from "./adminProtectedRoute";
 
 const Routers = () => {
-  const isAuthenticated = true
+ 
 
   return (
     <Routes>
-      <Route element={<PrivateRouters isAllowed={isAuthenticated ? true : false} redirectTo='/signin' />}>
+      <Route element={<AdminProtectedRoute />}>
         <Route path='/' element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path='/analytics' element={<Analytics />} />
@@ -57,7 +59,8 @@ const Routers = () => {
         </Route>
       </Route>
       <Route path='/register' element={<Register />} />
-      <Route path='/login' element={<Login />} />
+      {/* <Route path='/login' element={<Login />} /> */}
+      <Route path="/admin/login" element={<AdminLogin />} />
       <Route path='*' element={<NotFound />} />
     </Routes>
   )

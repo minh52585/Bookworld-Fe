@@ -4,9 +4,21 @@ import { Menu } from 'antd'
 import { Link, useLocation } from 'react-router'
 import { itemsRoute } from './const/menuRoute'
 import Sider from 'antd/es/layout/Sider'
+import { LogoutOutlined } from '@ant-design/icons'
+import { Button } from 'antd'
+import { useNavigate } from 'react-router-dom'
+
 
 const AppSidebar = () => {
   const isOpenDrawer = useAppSelector((state) => state.app.isOpenDrawer)
+const navigate = useNavigate()
+
+  const handleLogout = () => {
+  localStorage.removeItem("admin_token")
+  localStorage.removeItem("admin_user")
+
+  navigate("/admin/login", { replace: true })
+}
 
   const location = useLocation()
 
@@ -34,6 +46,17 @@ const AppSidebar = () => {
             items={itemsRoute}
           />
         </section>
+        <div style={{ padding: 16 }}>
+        <Button
+          danger
+          type="primary"
+          icon={<LogoutOutlined />}
+          block
+          onClick={handleLogout}
+        >
+          Đăng xuất
+        </Button>
+      </div>
       </div>
     </Sider>
   )
