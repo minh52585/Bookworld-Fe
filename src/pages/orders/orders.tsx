@@ -1,119 +1,83 @@
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { Button, Table } from "antd"
-import { Link } from "react-router";
+import { Button, Table, message } from "antd";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
-const data = [
-  {
-    id: 1,
-    users_id: "Nguyễn Dương",
-    status: "completed",
-    coupons_id: "SUMMER2025",
-    total_amount: 255000,
-    note: "Mua sách lập trình JavaScript + giao nhanh"
-  },
-  {
-    id: 2,
-    users_id: "Phạm Quỳnh",
-    status: "pending",
-    coupons_id: "FREESHIP50K",
-    total_amount: 180000,
-    note: "Mua combo sách IELTS + miễn phí ship"
-  },
-  {
-    id: 3,
-    users_id: "Ngọc Minh",
-    status: "cancelled",
-    coupons_id: "SUMMER2025",
-    total_amount: 250000,
-    note: "Bị hủy do không đủ hàng"
-  }
-];
-
-const columns = [
-  {
-    title: "ID",
-    dataIndex: "id",
-    key: "id"
-  },
-  {
-    title: "Người dùng",
-    dataIndex: "users_id",
-    key: "users_id"
-  },
-  {
-    title: "Trạng thái",
-    dataIndex: "status",
-    key: "status",
-    render: (status: string) => {
-      const statusMap: Record<string, { label: string; bg: string; color: string }> = {
-        pending: { label: "Chờ xác nhận", bg: "#fff7e6", color: "#fa8c16" },
-        processing: { label: "Đang xử lý", bg: "#e6f7ff", color: "#1890ff" },
-        shipping: { label: "Đang giao hàng", bg: "#f0f5ff", color: "#2f54eb" },
-        completed: { label: "Đã hoàn thành", bg: "#f6ffed", color: "#52c41a" },
-        cancelled: { label: "Đã huỷ", bg: "#fff1f0", color: "#f5222d" },
-        refunded: { label: "Đã hoàn tiền", bg: "#f9f0ff", color: "#722ed1" }
-      };
-
-      const { label, bg, color } = statusMap[status] || {
-        label: "Không xác định",
-        bg: "#f0f0f0",
-        color: "#595959"
-      };
-      return (
-        <span style={{
-          backgroundColor: bg,
-          color,
-          fontWeight: 600,
-          padding: "3px 8px",
-          borderRadius: "17px",
-          display: "inline-block"
-        }}>
-          {label}
-        </span>
-      );
-    }
-  },
-  {
-    title: "Mã giảm giá",
-    dataIndex: "coupons_id",
-    key: "coupons_id",
-  },
-  {
-    title: "Tổng tiền",
-    dataIndex: "total_amount",
-    key: "total_amount",
-    render: (total_amount: number) => `${total_amount.toLocaleString()}₫`
-  },
-  {
-    title: "Ghi chú",
-    dataIndex: "note",
-    key: "note"
-  },
-  {
-    title: "Hành động",
-    key: "action",
-    render: (_: any, record: any) => (
-      <Link to={`/order/details/${record.id}`}>
-        <Button icon={<InfoCircleOutlined />} size="small" style={{ backgroundColor: "white", color: "dodgerblue", borderColor: "dodgerblue" }} />
-      </Link>
-    )
-  }
-];
-
-const Orders = () => {
-  return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 }}>
-        <h1>Danh sách đơn hàng</h1>
-      </div>
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="id"
-        pagination={{ pageSize: 3 }}
-      />
-    </>
-  )
+interface Order {
+  _id: string;
+  user_id: { name?: string; email?: string };
+  subtotal: number;
+  shipping_fee: number;
+  discount?: { code?: string };
+  total: number;
+  status: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default Orders
+const Orders = () => {
+  const [data, setData] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [msgApi, contextHolder] = message.useMessage();
+
+  const fetchOrders = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      msgApi.warning("Bạn chưa đăng nhập");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await axios.get("http://localhost:5004/api/orders", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setData(res.data);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        msgApi.warning("Phiên đăng nhập hết hạn");
+      } else if (error.response?.status === 403) {
+        msgApi.error("Bạn không có quyền truy cập");
+      } else {
+        msgApi.error("Lỗi tải danh sách đơn hàng");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const columns = [
+    { title: "ID", dataIndex: "_id", key: "_id" },
+    { title: "Người dùng", dataIndex: "user_id", key: "user_id", render: (user: any) => user?.name || user?.email || "Ẩn danh" },
+    { title: "Trạng thái", dataIndex: "status", key: "status" },
+    { title: "Tổng tiền", dataIndex: "total", key: "total", render: (val: number) => val.toLocaleString() + "₫" },
+    { title: "Mã giảm giá", dataIndex: "discount", key: "discount", render: (val: any) => val?.code || "—" },
+    { title: "Ghi chú", dataIndex: "note", key: "note" },
+    {
+      title: "Hành động",
+      key: "action",
+      render: (_: any, record: Order) => (
+        <Link to={`/orders/${record._id}`}>
+          <Button icon={<InfoCircleOutlined />} size="small" style={{ backgroundColor: "white", color: "dodgerblue", borderColor: "dodgerblue" }} />
+        </Link>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      {contextHolder}
+      <h1>Danh sách đơn hàng</h1>
+      <Table columns={columns} dataSource={data} rowKey="_id" loading={loading} pagination={{ pageSize: 5 }} />
+    </>
+  );
+};
+
+export default Orders;
