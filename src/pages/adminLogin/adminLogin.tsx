@@ -6,7 +6,6 @@ import styles from "./adminLogin.styles";
 import { toast } from "react-toastify";
 
 const AdminLogin = () => {
-    
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -20,36 +19,33 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/admin/login`, {
+      // ✅ SỬA Ở ĐÂY: /admin/login ➜ /login
+      const res = await axios.post(`${API_BASE_URL}/auth/login`, {
         email: email.trim(),
         password: password.trim(),
       });
-     
 
       const { token, user } = res.data;
 
-      // 🔐 Lưu token riêng cho admin
       localStorage.setItem("admin_token", token);
       localStorage.setItem("admin_user", JSON.stringify(user));
       toast.success("Đăng nhập admin thành công!");
       navigate("/");
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message || "Đăng nhập thất bại"
-      );
+      setError(err?.response?.data?.message || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-  const token = localStorage.getItem("admin_token");
-  if (token) {
-    navigate("/", { replace: true });
-  }
-}, []);
+    const token = localStorage.getItem("admin_token");
+    if (token) {
+      navigate("/", { replace: true });
+    }
+  }, []);
 
   return (
-    
     <div style={styles.wrapper}>
       <form onSubmit={handleSubmit} style={styles.form}>
         <h2 style={styles.title}>Admin Login</h2>
@@ -82,7 +78,4 @@ const AdminLogin = () => {
   );
 };
 
-
-
 export default AdminLogin;
-

@@ -168,16 +168,8 @@ const ProductsUpdate = () => {
         </Row>
 
         <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="Giá tiền" name="price" rules={[{ required: true, message: 'Nhập giá' }]}>
-              <InputNumber style={{ width: '100%' }} placeholder="VD: 50000" />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item label="Số lượng" name="quantity" rules={[{ required: true, message: 'Nhập số lượng' }]}>
-              <InputNumber style={{ width: '100%' }} placeholder="VD: 50" />
-            </Form.Item>
-          </Col>
+         
+          
           <Col span={8}>
             <Form.Item label="Trạng thái" name="status" valuePropName="checked">
               <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" />
