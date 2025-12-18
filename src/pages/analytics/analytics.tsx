@@ -49,14 +49,14 @@ const Analytics = () => {
       if (filters.endDate) params.endDate = filters.endDate;
       if (filters.productId) params.productId = filters.productId;
 
-      /** ---- Tổng doanh thu ---- */
+      // tổng doanh thu
       const revenueRes = await api.get("/analytics/revenue", { params });
       const rev = revenueRes?.data?.data || {};
 
       setTotalRevenue(rev.totalRevenue || 0);
       setTotalOrders(rev.totalOrders || 0);
 
-      /** ---- Doanh thu theo sản phẩm ---- */
+      // doanh thu theo sản phẩm
       const productRes = await api.get("/analytics/revenue-by-product", { params });
       const productData = productRes.data?.data || [];
 
@@ -66,7 +66,8 @@ const Analytics = () => {
         setBestProduct(productData[0].productName || "Không có");
       }
 
-      /** ---- Doanh thu theo ngày ---- */
+      // doanh thu theo ngày
+
       const dailyRes = await api.get("/analytics/revenue-daily", { params });
       const dailyData = dailyRes.data?.data || [];
 

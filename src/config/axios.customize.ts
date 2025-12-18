@@ -15,7 +15,6 @@ const api = axios.create({
  */
 api.interceptors.request.use(
   (config) => {
-    // 🔴 ĐÚNG KEY TOKEN ADMIN
     const token = localStorage.getItem("admin_token");
 
     if (token) {
