@@ -20,9 +20,8 @@ const Analytics = () => {
   const [dailyRevenue, setDailyRevenue] = useState([]);
   const [productRevenue, setProductRevenue] = useState([]);
 
-  /** ============================
-   *  Lấy danh sách sản phẩm
-   ==============================*/
+  //  *  Lấy danh sách sản phẩm
+
   const fetchProducts = async () => {
     try {
       const res = await api.get("/products?limit=1000");
@@ -40,9 +39,9 @@ const Analytics = () => {
     }
   };
 
-  /** ============================
-   *  Lấy dữ liệu thống kê
-   ==============================*/
+
+  //  *  Lấy dữ liệu thống kê
+
   const fetchAnalytics = async () => {
     try {
       const params: any = {};
