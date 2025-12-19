@@ -1,86 +1,47 @@
-import axios from 'axios'
-// import { Mutex } from 'async-mutex'
-// import { store } from '@/redux/store'
-// import { setRefreshToken, setAccessToken } from '@/redux/slices/auth.slice'
+import axios from "axios";
 
-// interface AccessTokenResponse {
-//   access_token: string;
-// }
+/**
+ * Axios instance cho ADMIN
+ * Tự động gắn admin_token vào Authorization header
+ */
 
-// let accessToken = store.getState().auth.accessToken
-// store.subscribe(() => {
-//   const newAccessToken = store.getState().auth.accessToken
-//   if (newAccessToken !== accessToken) {
-//     accessToken = newAccessToken
-//   }
-// })
-
-// Set config defaults when creating the instance
 const api = axios.create({
-  // Use Vite env var if provided, otherwise fall back to the local BE URL the user requested
- baseURL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5004/api',
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:5004/api",
+  withCredentials: true,
+});
 
-})
+/**
+ * Request interceptor
+ */
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("admin_token");
 
-// const mutex = new Mutex()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
-// const handleRefreshToken = async (): Promise<string | null> => {
-//   return await mutex.runExclusive(async () => {
-//     const res = await instance.get<IBackendResponse<AccessTokenResponse>>(
-//       '/api/v1/auth/refresh-token'
-//     )
-//     if (res && res.data) return res.data.access_token
-//     else return null
-//   })
-// }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// Add a request interceptor
-// instance.interceptors.request.use(
-//   function (config: InternalAxiosRequestConfig) {
-//     // Do something before request is sent
-//     // const accessToken = store.getState().auth.accessToken
-//     // if (accessToken) {
-//     //   config.headers.Authorization = `Bearer ${accessToken}`
-//     // }
+/**
+ * Response interceptor
+ */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error("❌ 401 - Admin token thiếu hoặc hết hạn");
+    }
 
-//     return config
-//   },
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   function (error: any) {
-//     // Do something with request error
-//     return Promise.reject(error)
-//   }
-// )
+    if (error.response?.status === 403) {
+      console.error("⛔ 403 - Không có quyền admin");
+    }
 
-// instance.interceptors.response.use(
-//   (res) => res.data,
-//   async (error) => {
-//     // if (
-//     //   error.config &&
-//     //   error.response &&
-//     //   +error.response.status === 401 &&
-//     //   error.config.url !== '/api/v1/auth/signin'
-//     // ) {
-//     //   const access_token = await handleRefreshToken()
-//     //   if (access_token) {
-//     //     error.config.headers['Authorization'] = `Bearer ${access_token}`
-//     //     store.dispatch(setAccessToken({ accessToken: access_token }))
-//     //     return instance.request(error.config)
-//     //   }
-//     // }
+    return Promise.reject(error);
+  }
+);
 
-//     // if (
-//     //   error.config &&
-//     //   error.response &&
-//     //   +error.response.status === 400 &&
-//     //   error.config.url === '/api/v1/auth/refresh-token'
-//     // ) {
-//     //   const message = error?.response?.data?.message ?? 'Có lỗi xảy ra, vui lòng đăng nhập!'
-//     //   store.dispatch(setRefreshToken({ status: true, message: message }))
-//     // }
-
-//     return error?.response?.data ?? Promise.reject(error)
-//   }
-// )
-
-export default api
+export default api;
