@@ -38,7 +38,7 @@ const ProductsUpdate = () => {
     const fetchProduct = async () => {
       try {
         const res = await api.get(`/products/${id}`);
-        const product = res.data?.data?.product; // ✅ Lấy đúng product
+        const product = res.data?.data?.product;
         if (!product) throw new Error("Không có product");
 
         form.setFieldsValue({
@@ -103,7 +103,15 @@ const ProductsUpdate = () => {
         images: values.images || (image ? [image] : []),
       };
 
-      await api.put(`/products/${id}`, payload);
+      // --- CHỈ THÊM TOKEN VÀO ĐOẠN NÀY ---
+      const token = localStorage.getItem("admin_token");
+      await api.put(`/products/${id}`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      // ----------------------------------
+
       messageApi.success('Cập nhật sản phẩm thành công!');
       nav('/products');
     } catch (err: any) {
@@ -168,8 +176,6 @@ const ProductsUpdate = () => {
         </Row>
 
         <Row gutter={16}>
-         
-          
           <Col span={8}>
             <Form.Item label="Trạng thái" name="status" valuePropName="checked">
               <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" />

@@ -65,21 +65,21 @@ const ProductsAdd = () => {
   };
 
   // Submit form
+  // Submit form
+  // Trong file ProductsAdd.tsx
   const onFinish = async (values: any) => {
     try {
-      // Ép kiểu đúng
-      const payload = {
-        ...values,
-        weight: Number(values.weight || 0),
-        namxuatban: Number(values.namxuatban || 0),
-        sotrang: Number(values.sotrang || 0),
-        status: values.status ?? true,
-        images: values.images || [],
-      };
+      const payload = { ...values, /* các ép kiểu khác giữ nguyên */ };
 
-      console.log('Submitting product:', payload); // ✅ kiểm tra payload
+      // SỬA TÊN Ở ĐÂY: "token" thành "admin_token" cho khớp với file Login
+      const token = localStorage.getItem("admin_token"); 
 
-      await api.post('/products', payload);
+      await api.post('/products', payload, {
+        headers: {
+          Authorization: `Bearer ${token}` 
+        }
+      });
+
       messageApi.success('Thêm sản phẩm thành công!');
       nav('/products');
     } catch (err: any) {

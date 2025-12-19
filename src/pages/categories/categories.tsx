@@ -14,10 +14,6 @@ const Category = () => {
       try {
         const res = await api.get('/categories');
         console.log('API categories:', res.data);
-        // Hỗ trợ nhiều dạng response từ BE:
-        // - res.data.data.items (pagination)
-        // - res.data.data (array)
-        // - res.data (array)
         const d = res.data;
         if (Array.isArray(d)) return d;
         if (Array.isArray(d?.data)) return d.data;
@@ -31,15 +27,26 @@ const Category = () => {
     },
   });
 
-
   const mutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/categories/${id}`);
+      // --- THÊM TOKEN VÀO ĐÂY ĐỂ VƯỢT QUA KIỂM TRA ADMIN ---
+      const token = localStorage.getItem("admin_token");
+      await api.delete(`/categories/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      // -------------------------------------------------
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['category'] });
+      // Sửa lại queryKey cho khớp với useQuery bên trên (categories có s)
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       message.success('Xoá danh mục thành công!');
     },
+    onError: (err: any) => {
+      console.error(err);
+      message.error(err.response?.data?.message || 'Xoá danh mục thất bại!');
+    }
   });
 
   const DelCategory = (id: string) => {
@@ -74,7 +81,7 @@ const Category = () => {
       <Table
         dataSource={data ?? []}
         columns={columns}
-        rowKey={(record) => record._id} // MongoDB _id
+        rowKey={(record) => record._id} 
       />
     </>
   );

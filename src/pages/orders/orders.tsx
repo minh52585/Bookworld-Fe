@@ -2,7 +2,8 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { Button, Table, message } from "antd";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+// Thay đổi import axios thành api từ config của bạn
+import api from "@/config/axios.customize";
 
 interface Order {
   _id: string;
@@ -23,7 +24,8 @@ const Orders = () => {
   const [msgApi, contextHolder] = message.useMessage();
 
   const fetchOrders = async () => {
-    const token = localStorage.getItem("token");
+    // SỬA: Lấy đúng key "admin_token"
+    const token = localStorage.getItem("admin_token");
 
     if (!token) {
       msgApi.warning("Bạn chưa đăng nhập");
@@ -32,10 +34,16 @@ const Orders = () => {
 
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:5004/api/orders", {
+      // SỬA: Dùng instance 'api' và URL tương đối
+      const res = await api.get("/orders", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setData(res.data);
+      
+      // Axios instance thường trả về data trực tiếp hoặc qua res.data
+      // Tùy vào cấu hình BE của bạn, nếu res.data.data mới là array thì sửa lại nhé
+      const ordersData = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setData(ordersData);
+      
     } catch (error: any) {
       if (error.response?.status === 401) {
         msgApi.warning("Phiên đăng nhập hết hạn");
@@ -57,7 +65,7 @@ const Orders = () => {
     { title: "ID", dataIndex: "_id", key: "_id" },
     { title: "Người dùng", dataIndex: "user_id", key: "user_id", render: (user: any) => user?.name || user?.email || "Ẩn danh" },
     { title: "Trạng thái", dataIndex: "status", key: "status" },
-    { title: "Tổng tiền", dataIndex: "total", key: "total", render: (val: number) => val.toLocaleString() + "₫" },
+    { title: "Tổng tiền", dataIndex: "total", key: "total", render: (val: number) => val ? val.toLocaleString() + "₫" : "0₫" },
     { title: "Mã giảm giá", dataIndex: "discount", key: "discount", render: (val: any) => val?.code || "—" },
     { title: "Ghi chú", dataIndex: "note", key: "note" },
     {
@@ -74,8 +82,14 @@ const Orders = () => {
   return (
     <>
       {contextHolder}
-      <h1>Danh sách đơn hàng</h1>
-      <Table columns={columns} dataSource={data} rowKey="_id" loading={loading} pagination={{ pageSize: 5 }} />
+      <h1 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>Danh sách đơn hàng</h1>
+      <Table 
+        columns={columns} 
+        dataSource={data} 
+        rowKey="_id" 
+        loading={loading} 
+        pagination={{ pageSize: 5 }} 
+      />
     </>
   );
 };

@@ -1,4 +1,4 @@
-  import api from '@/config/axios.customize';
+import api from '@/config/axios.customize';
   import { ICategory } from '@/types/category';
   import { Button, Form, Input, message, Select } from 'antd';
   import { useNavigate } from 'react-router';
@@ -12,7 +12,16 @@
 
     const onFinish = async (values: ICategory) => {
       try {
-        await api.post('/categories', values);
+        // --- CHỈ THÊM PHẦN TOKEN Ở ĐÂY ---
+        const token = localStorage.getItem("admin_token"); 
+        
+        await api.post('/categories', values, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        // --------------------------------
+
         message.success('Thêm danh mục thành công!');
         queryClient.invalidateQueries({ queryKey: ['categories'] }); 
         nav('/categories');

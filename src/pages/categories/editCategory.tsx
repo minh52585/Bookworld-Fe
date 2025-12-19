@@ -7,13 +7,16 @@ import { useNavigate, useParams } from 'react-router';
 
 const EditCategory = () => {
   const { id } = useParams();
+  const { TextArea } = Input;
+  const nav = useNavigate();
+  const [form] = Form.useForm();
+
   const { data } = useQuery({
     queryKey: ['categories', id],
     queryFn: async () => {
       try {
         const res = await api.get(`/categories/${id}`);
         console.log('DATA', res.data);
-        // Trả về object category (không phải array)
         return res.data?.data ?? res.data;
       } catch (error) {
         console.log(error);
@@ -28,15 +31,22 @@ const EditCategory = () => {
         ...data,
       });
     }
-  }, [data]);
-  const { TextArea } = Input
-  const nav = useNavigate()
-  const [form] = Form.useForm()
+  }, [data, form]);
+
   const onFinish = async (values: ICategory) => {
     try {
-      await api.put(`/categories/${id}`, values);
+      // --- THÊM TOKEN VÀO ĐOẠN NÀY ---
+      const token = localStorage.getItem("admin_token");
+      
+      await api.put(`/categories/${id}`, values, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      // ------------------------------
+
       console.log('Category:', values);
-      message.success('Sửa danh mục thành công!');
+      message.success('Sửa danh mục thành công!');
       nav('/categories');
     } catch (err: any) {
       console.error(err);
@@ -103,4 +113,4 @@ const EditCategory = () => {
   );
 };
 
-export default EditCategory
+export default EditCategory;

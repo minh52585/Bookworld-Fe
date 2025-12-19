@@ -21,7 +21,7 @@ const ProductsPage = () => {
         return items.map((item: any, index: number) => ({
           ...item,
           stt: index + 1,
-          quantity: item.quantity ?? 0, // 🔹 thêm số lượng
+          quantity: item.quantity ?? 0,
           images: item.images || [],
           status: item.status ?? true,
         }));
@@ -35,15 +35,21 @@ const ProductsPage = () => {
   // Xoá sản phẩm
   const mutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/products/${id}`);
+      // --- THÊM TOKEN VÀO ĐÂY ---
+      const token = localStorage.getItem("admin_token");
+      await api.delete(`/products/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       message.success('Xoá sản phẩm thành công!');
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.error(err);
-      message.error('Xoá sản phẩm thất bại!');
+      message.error(err.response?.data?.message || 'Xoá sản phẩm thất bại!');
     },
   });
 
@@ -71,7 +77,6 @@ const ProductsPage = () => {
     { title: 'Kích thước', dataIndex: 'size', key: 'size', width: 120 },
     { title: 'SKU', dataIndex: 'sku', key: 'sku', width: 120 },
     
-   
     { 
       title: 'Mô tả', 
       dataIndex: 'description', 
@@ -102,12 +107,18 @@ const ProductsPage = () => {
           unCheckedChildren="Hết"
           onChange={async (checked) => {
             try {
-              await api.put(`/products/${record._id}`, { status: checked });
+              // --- THÊM TOKEN KHI CẬP NHẬT TRẠNG THÁI ---
+              const token = localStorage.getItem("admin_token");
+              await api.put(`/products/${record._id}`, { status: checked }, {
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              });
               message.success('Cập nhật trạng thái thành công!');
               queryClient.invalidateQueries({ queryKey: ['products'] });
-            } catch (error) {
+            } catch (error: any) {
               console.error(error);
-              message.error('Cập nhật trạng thái thất bại!');
+              message.error(error.response?.data?.message || 'Cập nhật trạng thái thất bại!');
             }
           }}
         />
