@@ -54,8 +54,12 @@ const EditVariant = () => {
     const fetchVariant = async () => {
       try {
         setLoadingPage(true);
-
-        const res = await api.get(`/variants/${id}`);
+        // Thêm Token khi lấy chi tiết biến thể
+        const token = localStorage.getItem("admin_token");
+        const res = await api.get(`/variants/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
         const v = res.data.data;
 
         // set form
@@ -80,6 +84,7 @@ const EditVariant = () => {
 
   /* ================= SELECT PRODUCT ================= */
   const handleSelectProduct = async (productId: string) => {
+    if (!productId) return;
     try {
       setLoadingProduct(true);
       const res = await api.get(`/products/${productId}`);
@@ -107,7 +112,11 @@ const EditVariant = () => {
         status: "active",
       };
 
-      await api.put(`/variants/${id}`, payload);
+      // --- THÊM TOKEN KHI CẬP NHẬT ---
+      const token = localStorage.getItem("admin_token");
+      await api.put(`/variants/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       msg.success("Cập nhật biến thể thành công");
       navigate("/variants");

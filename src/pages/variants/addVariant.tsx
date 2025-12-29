@@ -88,8 +88,16 @@ const AddVariant = () => {
 
       console.log("🔥 Payload gửi lên backend:", payload);
 
-      // 🔹 Gọi API
-      const res = await api.post("/variants", payload);
+      // --- CHỈ THÊM ĐOẠN TOKEN Ở ĐÂY ---
+      const token = localStorage.getItem("admin_token");
+
+      // 🔹 Gọi API với Headers Authorization
+      const res = await api.post("/variants", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      // --------------------------------
 
       console.log("✅ Response từ backend:", res.data);
 
@@ -136,8 +144,8 @@ const AddVariant = () => {
                 </Select>
               </Form.Item>
 
-             {/* ================= PRODUCT INFO ================= */}
-           {selectedProduct && (
+               {/* ================= PRODUCT INFO ================= */}
+             {selectedProduct && (
           <Spin spinning={loadingProduct}>
             <Card
               size="small"
@@ -199,8 +207,6 @@ const AddVariant = () => {
             </Card>
           </Spin>
         )}
-
-
 
               <Form.Item
                 label="Loại sách"

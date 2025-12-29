@@ -28,12 +28,18 @@ const Variants = () => {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
+  // Lấy token dùng chung cho các hàm
+  const token = localStorage.getItem("admin_token");
+
   useEffect(() => {
     const fetchVariants = async () => {
       try {
         setLoading(true);
-        const res = await api.get("/variants");
-        const items: Variant[] = res.data?.data?.items ?? [];
+        // THÊM TOKEN KHI LẤY DANH SÁCH
+        const res = await api.get("/variants", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const items: Variant[] = res.data?.data?.items ?? res.data?.data ?? [];
         setVariants(items);
         setFilteredVariants(items);
       } catch (err) {
@@ -46,7 +52,7 @@ const Variants = () => {
       }
     };
     fetchVariants();
-  }, []);
+  }, [token]);
 
   // 🔹 Apply filters
   useEffect(() => {
@@ -58,13 +64,16 @@ const Variants = () => {
 
   const onDelete = async (_id: string) => {
     try {
-      await api.delete(`/variants/${_id}`);
+      // THÊM TOKEN KHI XOÁ
+      await api.delete(`/variants/${_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const newVariants = variants.filter((v) => v._id !== _id);
       setVariants(newVariants);
       message.success("Xoá biến thể thành công");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      message.error("Xoá biến thể thất bại");
+      message.error(err.response?.data?.message || "Xoá biến thể thất bại");
     }
   };
 
@@ -181,7 +190,7 @@ const Variants = () => {
           flexWrap: "wrap",
         }}
       >
-        <h2>Danh sách biến thể</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Danh sách biến thể</h2>
         <div style={{ display: "flex", gap: 8 }}>
           <Select
             placeholder="Lọc theo loại"

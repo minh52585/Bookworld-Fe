@@ -51,7 +51,7 @@ const Routers = () => {
           <Route path='/categories/add' element={<AddCategory />} />
           <Route path='/categories/edit/:id' element={<EditCategory />} />         
           <Route path='/orders' element={<Orders />} />
-          <Route path='/order/details/:id' element={<OrderDetails />} />
+          <Route path='/orders/details/:id' element={<OrderDetails />} />
           <Route path='/coupons' element={<Coupons />} />
           <Route path='/coupons/add' element={<AddCoupon />} />
           <Route path='/coupons/edit/:id' element={<EditCoupon />} />
