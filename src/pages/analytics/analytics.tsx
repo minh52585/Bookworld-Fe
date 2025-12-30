@@ -29,7 +29,7 @@ const Analytics = () => {
   const [dailyRevenue, setDailyRevenue] = useState<any[]>([]);
   const [productRevenue, setProductRevenue] = useState<any[]>([]);
 
-  /* ================= LOAD PRODUCTS ================= */
+  //load products
   const fetchProducts = async () => {
     try {
       const res = await api.get("/products?limit=1000");
@@ -44,7 +44,7 @@ const Analytics = () => {
     }
   };
 
-  /* ================= LOAD ANALYTICS ================= */
+  //load analytics
   const fetchAnalytics = async () => {
     try {
       const params: any = {};
@@ -87,9 +87,8 @@ const Analytics = () => {
     fetchAnalytics();
   }, []);
 
-  /* ================= CHART CONFIG ================= */
 
-  // ✅ DOANH THU THEO NGÀY – CỘT DỌC
+  //doanh thu theo ngày
   const dailyChartConfig = {
     data: dailyRevenue,
     xField: "date",
@@ -114,7 +113,7 @@ const Analytics = () => {
     },
   };
 
-  // ✅ DOANH THU THEO SẢN PHẨM – CỘT DỌC
+ //doanh thu theo sản phẩm
   const productChartConfig = {
     data: productRevenue,
     xField: "productName",
@@ -142,8 +141,6 @@ const Analytics = () => {
   return (
     <div style={{ padding: 20 }}>
       <Title level={3}>📊 Thống kê doanh thu</Title>
-
-      {/* ================= FILTER ================= */}
       <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
           <Col span={8}>
@@ -184,8 +181,6 @@ const Analytics = () => {
           </Col>
         </Row>
       </Card>
-
-      {/* ================= SUMMARY ================= */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
         <Col span={6}>
           <Card>
@@ -226,7 +221,6 @@ const Analytics = () => {
         </Col>
       </Row>
 
-      {/* ================= CHARTS ================= */}
       <Card style={{ marginBottom: 20 }}>
         <Title level={5}>📅 Doanh thu theo ngày</Title>
         <Column {...dailyChartConfig} />
