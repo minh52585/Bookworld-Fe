@@ -6,140 +6,160 @@ import { useState } from 'react';
 import api from '@/config/axios.customize';
 import { IProducts } from '@/types/product';
 
+//type category
+interface ICategory {
+  _id: string;
+  name: string;
+}
+
+interface IProductWithCategory extends IProducts {
+  stt: number;
+  category?: ICategory;
+}
+
 const ProductsPage = () => {
   const queryClient = useQueryClient();
+
   const [searchText, setSearchText] = useState('');
-
-  // Lấy danh sách sản phẩm
-  const { data, isLoading } = useQuery<IProducts[]>({
-    queryKey: ['products'],
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  //lấy danh mục
+  const { data: categories = [] } = useQuery<ICategory[]>({
+    queryKey: ['categories'],
     queryFn: async () => {
-      try {
-        const res = await api.get('/products');
-        const items = res.data?.data?.items || [];
-
-        return items.map((item: any, index: number) => ({
-          ...item,
-          stt: index + 1,
-          quantity: item.quantity ?? 0,
-          images: item.images || [],
-          status: item.status ?? true,
-        }));
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        return [];
-      }
+      const res = await api.get('/categories');
+      return res.data?.data?.items ?? [];
     },
   });
 
-  // Xoá sản phẩm
-  const mutation = useMutation({
+  // danh sách sản phẩm
+  const { data: products = [], isLoading } = useQuery<IProductWithCategory[]>({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const res = await api.get('/products');
+      const items = res.data?.data?.items ?? [];
+
+      return items.map((item: any, index: number) => ({
+        ...item,
+        stt: index + 1,
+        images: Array.isArray(item.images) ? item.images : [],
+        status: Boolean(item.status),
+      }));
+    },
+  });
+
+  // xóa sp
+  const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // --- THÊM TOKEN VÀO ĐÂY ---
-      const token = localStorage.getItem("admin_token");
-      await api.delete(`/products/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const token = localStorage.getItem('admin_token');
+      return api.delete(`/products/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
     },
     onSuccess: () => {
+      message.success('Xoá sản phẩm thành công');
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      message.success('Xoá sản phẩm thành công!');
-    },
-    onError: (err: any) => {
-      console.error(err);
-      message.error(err.response?.data?.message || 'Xoá sản phẩm thất bại!');
     },
   });
+  const filteredData = products.filter((item) => {
+    const matchName = item.name
+      ?.toLowerCase()
+      .includes(searchText.toLowerCase());
 
-  const DelProduct = (id: string) => mutation.mutate(id);
+    const matchCategory =
+      selectedCategory === 'all'
+        ? true
+        : item.category?._id === selectedCategory;
 
-  const filteredData = Array.isArray(data)
-    ? data.filter((item) => item.name?.toLowerCase().includes(searchText.toLowerCase()))
-    : [];
+    return matchName && matchCategory;
+  });
 
   const columns = [
-    { title: 'STT', dataIndex: 'stt', key: 'stt', width: 60 },
-    { title: 'Tên', dataIndex: 'name', key: 'name', width: 180 },
-    { title: 'Tác giả', dataIndex: 'author', key: 'author', width: 140 },
-    { 
-      title: 'Danh mục', 
-      dataIndex: 'category', 
-      key: 'category', 
-      width: 140,
-      render: (cat: any) => cat?.name || 'Chưa phân loại',
+    { title: 'STT', dataIndex: 'stt', width: 60 },
+    { title: 'Tên', dataIndex: 'name', width: 200 },
+    { title: 'Tác giả', dataIndex: 'author', width: 150 },
+    {
+      title: 'Danh mục',
+      width: 160,
+      render: (_: any, record: IProductWithCategory) =>
+        record.category?.name || 'Chưa phân loại',
     },
-    { title: 'Năm XB', dataIndex: 'namxuatban', key: 'namxuatban', width: 100 },
-    { title: 'NXB', dataIndex: 'nhaxuatban', key: 'nhaxuatban', width: 140 },
-    { title: 'Số trang', dataIndex: 'sotrang', key: 'sotrang', width: 100 },
-    { title: 'Khối lượng (g)', dataIndex: 'weight', key: 'weight', width: 100 },
-    { title: 'Kích thước', dataIndex: 'size', key: 'size', width: 120 },
-    { title: 'SKU', dataIndex: 'sku', key: 'sku', width: 120 },
-    
-    { 
-      title: 'Mô tả', 
-      dataIndex: 'description', 
-      key: 'description', 
-      width: 200,
-      render: (text: string) => text ? (text.length > 50 ? text.slice(0,50)+'...' : text) : '',
+    { title: 'Năm XB', dataIndex: 'namxuatban', width: 100 },
+    { title: 'NXB', dataIndex: 'nhaxuatban', width: 140 },
+    { title: 'Số trang', dataIndex: 'sotrang', width: 100 },
+    { title: 'Khối lượng (g)', dataIndex: 'weight', width: 120 },
+    { title: 'Kích thước', dataIndex: 'size', width: 120 },
+    { title: 'SKU', dataIndex: 'sku', width: 120 },
+    {
+      title: 'Mô tả',
+      dataIndex: 'description',
+      width: 220,
+      render: (text: string) =>
+        text && text.length > 50 ? `${text.slice(0, 50)}...` : text,
     },
-    { 
-      title: 'Hình ảnh', 
-      dataIndex: 'images', 
-      key: 'images', 
+    {
+      title: 'Hình ảnh',
+      dataIndex: 'images',
       width: 100,
-      render: (images: string[]) => images?.[0] ? (
-        <img src={images[0]} width={50} height={50} style={{ objectFit: 'cover', borderRadius: 4 }} />
-      ) : (
-        <div style={{ width: 50, height: 50, backgroundColor: '#f0f0f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#999' }}>Chưa có</div>
-      ),
+      render: (images: string[]) =>
+        images?.[0] ? (
+          <img
+            src={images[0]}
+            alt=""
+            width={50}
+            height={50}
+            style={{ objectFit: 'cover', borderRadius: 4 }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 50,
+              height: 50,
+              background: '#f0f0f0',
+              borderRadius: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              color: '#999',
+            }}
+          >
+            Chưa có
+          </div>
+        ),
     },
-    { 
-      title: 'Trạng thái', 
-      dataIndex: 'status', 
-      key: 'status', 
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
       width: 100,
-      render: (status: boolean, record: IProducts) => (
+      render: (status: boolean, record: IProductWithCategory) => (
         <Switch
-          checked={Boolean(status)}
-          checkedChildren="Sẵn"
-          unCheckedChildren="Hết"
+          checked={status}
           onChange={async (checked) => {
-            try {
-              // --- THÊM TOKEN KHI CẬP NHẬT TRẠNG THÁI ---
-              const token = localStorage.getItem("admin_token");
-              await api.put(`/products/${record._id}`, { status: checked }, {
-                headers: {
-                  Authorization: `Bearer ${token}`
-                }
-              });
-              message.success('Cập nhật trạng thái thành công!');
-              queryClient.invalidateQueries({ queryKey: ['products'] });
-            } catch (error: any) {
-              console.error(error);
-              message.error(error.response?.data?.message || 'Cập nhật trạng thái thất bại!');
-            }
+            const token = localStorage.getItem('admin_token');
+            await api.put(
+              `/products/${record._id}`,
+              { status: checked },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            message.success('Cập nhật trạng thái thành công');
+            queryClient.invalidateQueries({ queryKey: ['products'] });
           }}
         />
       ),
     },
-    { 
-      title: 'Hành động', 
-      key: 'action', 
+    {
+      title: 'Hành động',
       width: 120,
-      render: (_: any, record: IProducts) => (
+      render: (_: any, record: IProductWithCategory) => (
         <Space>
-          <Popconfirm 
-            title="Xoá sản phẩm này?" 
-            okText="Xoá" 
-            cancelText="Huỷ" 
-            onConfirm={() => DelProduct(record._id)}
+          <Popconfirm
+            title="Xoá sản phẩm này?"
+            onConfirm={() => deleteMutation.mutate(record._id)}
           >
-            <Button icon={<DeleteOutlined />} size="small" style={{ backgroundColor: 'white', color: 'red', borderColor: 'red' }} />
+            <Button danger icon={<DeleteOutlined />} size="small" />
           </Popconfirm>
           <Link to={`/products/update/${record._id}`}>
-            <Button icon={<EditOutlined />} size="small" style={{ backgroundColor: 'white', color: 'green', borderColor: 'green' }} />
+            <Button icon={<EditOutlined />} size="small" />
           </Link>
         </Space>
       ),
@@ -150,30 +170,42 @@ const ProductsPage = () => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Danh sách sản phẩm</h1>
+
         <div className="flex gap-2 items-center">
           <input
-            type="text"
-            placeholder="Tìm kiếm theo tên sản phẩm..."
+            placeholder="Tìm theo tên..."
             value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            className="px-2 py-1 border border-gray-300 rounded"
+            onChange={(e) => setSearchText(e.target.value)}
+            className="px-2 py-1 border rounded"
           />
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-2 py-1 border rounded"
+          >
+            <option value="all">Tất cả danh mục</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
           <Link to="/products/add">
-            <Button icon={<PlusOutlined />} size="small" style={{ backgroundColor: 'white', color: 'dodgerblue', borderColor: 'dodgerblue' }} />
+            <Button icon={<PlusOutlined />} />
           </Link>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table
-          dataSource={filteredData}
-          columns={columns}
-          rowKey={record => record._id}
-          pagination={{ pageSize: 5 }}
-          scroll={{ x: 1800 }}
-          loading={isLoading}
-        />
-      </div>
+      <Table
+        rowKey="_id"
+        loading={isLoading}
+        columns={columns}
+        dataSource={filteredData}
+        pagination={{ pageSize: 5 }}
+        scroll={{ x: 1800 }}
+      />
     </div>
   );
 };
