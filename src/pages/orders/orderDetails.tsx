@@ -13,6 +13,7 @@ import {
   Modal,
   Input,
   Space,
+  Timeline
 } from "antd";
 import {
   EditOutlined,
@@ -22,6 +23,7 @@ import {
   ShoppingOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+
 
 const { Item } = Descriptions;
 
@@ -51,6 +53,7 @@ interface OrderDetail {
     method: string;
     status: string;
   };
+  status_logs?: [];
   shipping_address?: any;
   note: string;
   createdAt: string;
@@ -61,14 +64,12 @@ interface OrderDetail {
    STATUS CONFIG
 ========================= */
 const STATUS_CONFIG: Record<string, { color: string; icon?: React.ReactNode }> = {
-  "Đã hủy": { color: "red", icon: <CloseOutlined /> },
   "Chờ xử lý": { color: "orange", icon: <ShoppingOutlined /> },
   "Đã xác nhận": { color: "blue", icon: <CheckOutlined /> },
   "Đang chuẩn bị hàng": { color: "cyan", icon: <ShoppingOutlined /> },
   "Đang giao hàng": { color: "purple", icon: <TruckOutlined /> },
   "Giao hàng không thành công": { color: "red", icon: <CloseOutlined /> },
   "Giao hàng thành công": { color: "green", icon: <CheckOutlined /> },
-  "Trả hàng/Hoàn tiền": { color: "volcano", icon: <CloseOutlined /> },
 };
 
 /* =========================
@@ -89,32 +90,28 @@ const OrderDetailsAdmin = () => {
      WORKFLOW
   ========================= */
   const getAvailableStatuses = (current: string) => {
-    // Tất cả trạng thái có thể có từ backend enum
-    const allStatuses = [
-      "Đã hủy",
-      "Chờ xử lý", 
-      "Đã xác nhận",
-      "Đang chuẩn bị hàng",
-      "Đang giao hàng",
-      "Giao hàng không thành công",
-      "Giao hàng thành công",
-      "Trả hàng/Hoàn tiền"
-    ];
+  const flow = [
+    "Chờ xử lý",
+    "Đã xác nhận",
+    "Đang chuẩn bị hàng",
+    "Đang giao hàng",
+    "Giao hàng không thành công",
+    "Giao hàng thành công",
+  ];
 
-    // Workflow transitions - cho phép chuyển sang tất cả trạng thái khác (trừ chính nó)
-    const validTransitions = {
-      "Đã hủy": allStatuses.filter(s => s !== "Đã hủy"),
-      "Chờ xử lý": allStatuses.filter(s => s !== "Chờ xử lý"),
-      "Đã xác nhận": allStatuses.filter(s => s !== "Đã xác nhận"),
-      "Đang chuẩn bị hàng": allStatuses.filter(s => s !== "Đang chuẩn bị hàng"),
-      "Đang giao hàng": allStatuses.filter(s => s !== "Đang giao hàng"),
-      "Giao hàng không thành công": allStatuses.filter(s => s !== "Giao hàng không thành công"),
-      "Giao hàng thành công": allStatuses.filter(s => s !== "Giao hàng thành công"),
-      "Trả hàng/Hoàn tiền": allStatuses.filter(s => s !== "Trả hàng/Hoàn tiền"),
-    };
-    
-    return validTransitions[current] || [];
-  };
+  const index = flow.indexOf(current);
+  if (index === -1) return [];
+
+  // case đặc biệt
+  if (current === "Giao hàng không thành công") {
+    return ["Đang giao hàng", "Giao hàng thành công"];
+  }
+
+  // mặc định: chỉ đi lên
+  return flow.slice(index + 1);
+};
+
+
 
   /* =========================
      FETCH ORDER
@@ -230,14 +227,15 @@ const OrderDetailsAdmin = () => {
               <Tag color={STATUS_CONFIG[order.status]?.color} icon={STATUS_CONFIG[order.status]?.icon}>
                 {order.status}
               </Tag>
-              <Button
-                size="small"
-                icon={<EditOutlined />}
-                disabled={getAvailableStatuses(order.status).length === 0}
-                onClick={() => setStatusModalVisible(true)}
-              >
-                Cập nhật
-              </Button>
+                {getAvailableStatuses(order.status).length > 0 && (
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => setStatusModalVisible(true)}
+                >
+                  Cập nhật
+                </Button>
+          )}
             </Space>
           </Item>
 
@@ -263,8 +261,8 @@ const OrderDetailsAdmin = () => {
                 </strong>
               </div>
               <small>
-                Subtotal: {order.subtotal?.toLocaleString()} ₫
-                {order.shipping_fee > 0 && ` + Ship: ${order.shipping_fee?.toLocaleString()} ₫`}
+                Tạm tính: {order.subtotal?.toLocaleString()} ₫
+                {order.shipping_fee > 0 && ` + Phí ship: ${order.shipping_fee?.toLocaleString()} ₫`}
                 {order.discount?.amount && order.discount.amount > 0 && ` - Giảm: ${order.discount.amount?.toLocaleString()} ₫`}
               </small>
             </Space>
@@ -276,9 +274,10 @@ const OrderDetailsAdmin = () => {
           {order.shipping_address && (
             <Item label="Địa chỉ giao hàng" span={2}>
               <div>
-                <strong>{order.shipping_address.fullName}</strong> - {order.shipping_address.phone}
-                <br />
-                {order.shipping_address.address}, {order.shipping_address.ward}, {order.shipping_address.district}, {order.shipping_address.province}
+                <strong>Họ và tên: {order.shipping_address.name}</strong> <br></br>
+                <strong>Số điện thoại: {order.shipping_address.phone}</strong> <br></br>
+                <strong>Địa chỉ: {order.shipping_address.address}</strong> 
+             
               </div>
             </Item>
           )}
@@ -355,6 +354,24 @@ const OrderDetailsAdmin = () => {
         />
 
       </Card>
+
+      <Divider orientation="left">Lịch sử trạng thái</Divider>
+
+      <Timeline
+        items={order.status_logs?.map((log: any) => ({
+          color: STATUS_CONFIG[log.status]?.color || "blue",
+          children: (
+            <>
+              <strong>{log.status}</strong>
+              {log.note && <div>{log.note}</div>}
+              <small>
+                {new Date(log.createdAt).toLocaleString("vi-VN")}
+              </small>
+            </>
+          ),
+        }))}
+      />
+
 
       {/* MODAL */}
       <Modal
