@@ -3,6 +3,7 @@ import { Button, Table, message, Tag, Card } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Popconfirm } from "antd";
 
 interface Order {
   _id: string;
@@ -81,6 +82,47 @@ const OrdersAdmin = () => {
     fetchOrders();
   }, []);
 
+  const approveReturn = async (orderId: string) => {
+  const token = localStorage.getItem("admin_token");
+  if (!token) {
+    msgApi.error("Chưa đăng nhập admin");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await axios.post(
+      `http://localhost:5004/api/orders/approveReturnOrder/${orderId}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    msgApi.success("Đã duyệt yêu cầu Trả hàng / Hoàn tiền");
+    fetchOrders(); // reload list
+  } catch (error: any) {
+    msgApi.error(
+      error.response?.data?.message || "Duyệt trả hàng thất bại"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const statusColor = (status: string) => {
+  switch (status) {
+    case "Đang yêu cầu Trả hàng/Hoàn tiền":
+      return "orange";
+    case "Trả hàng/Hoàn tiền thành công":
+      return "green";
+    default:
+      return "blue";
+  }
+};
+
+
   const columns = [
     { 
       title: "Mã đơn", 
@@ -94,11 +136,13 @@ const OrdersAdmin = () => {
       key: "user_id", 
       render: (user: any) => typeof user === 'string' ? `User ${user.slice(-6)}` : user?.name || "—"
     },
-    { 
-      title: "Trạng thái", 
-      dataIndex: "status", 
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
       key: "status",
-      render: (status: string) => <Tag color="blue">{status}</Tag>
+      render: (status: string) => (
+        <Tag color={statusColor(status)}>{status}</Tag>
+      ),
     },
     { 
       title: "Tổng tiền", 
@@ -113,16 +157,32 @@ const OrdersAdmin = () => {
       render: (date: string) => new Date(date).toLocaleDateString('vi-VN')
     },
     {
-      title: "Hành động",
-      key: "action",
-      render: (_: any, record: Order) => (
-        <Link to={`/orders/details/${record._id}`}>
-          <Button icon={<InfoCircleOutlined />} size="small" type="primary">
-            Chi tiết
+  title: "Hành động",
+  key: "action",
+  render: (_: any, record: Order) => (
+    <div style={{ display: "flex", gap: 8 }}>
+      <Link to={`/orders/details/${record._id}`}>
+        <Button icon={<InfoCircleOutlined />} size="small" type="primary">
+          Chi tiết
+        </Button>
+      </Link>
+
+      {record.status === "Đang yêu cầu Trả hàng/Hoàn tiền" && (
+        <Popconfirm
+          title="Xác nhận duyệt trả hàng?"
+          description="Hệ thống sẽ hoàn tiền vào ví và hoàn kho"
+          okText="Xác nhận"
+          cancelText="Hủy"
+          onConfirm={() => approveReturn(record._id)}
+        >
+          <Button size="small" danger>
+            Xác nhận yêu cầu
           </Button>
-        </Link>
-      ),
-    },
+        </Popconfirm>
+      )}
+    </div>
+  ),
+},
   ];
 
   console.log("🎨 Rendering component, data length:", data.length);
