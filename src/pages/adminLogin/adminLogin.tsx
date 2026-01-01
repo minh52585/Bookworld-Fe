@@ -20,7 +20,7 @@ const AdminLogin = () => {
 
     try {
       // ✅ SỬA Ở ĐÂY: /admin/login ➜ /login
-      const res = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const res = await axios.post(`${API_BASE_URL}/admin/login`, {
         email: email.trim(),
         password: password.trim(),
       });

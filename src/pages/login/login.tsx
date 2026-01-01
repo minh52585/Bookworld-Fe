@@ -18,7 +18,7 @@ const Login = () => {
 
   const onFinish = async (values: ILogin) => {
     try {
-      await api.post('api/login', values)
+      await api.post('api/admin/login', values)
       message.success('Đăng nhập thành công!')
       const userData = {
         ...values,

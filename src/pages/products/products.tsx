@@ -251,7 +251,7 @@ const ProductsPage = () => {
         columns={columns}
         dataSource={filteredData}
         bordered
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 10 }}
         scroll={{ x: 1800 }}
       />
     </Card>
