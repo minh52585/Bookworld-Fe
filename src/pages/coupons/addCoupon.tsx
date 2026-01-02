@@ -1,35 +1,47 @@
 import { Button, DatePicker, Form, Input, InputNumber, message, Select, Row, Col } from 'antd';
 import { useNavigate } from 'react-router';
-import dayjs from 'dayjs';
 
-const { TextArea } = Input;
 const { RangePicker } = DatePicker;
+import api from '@/config/axios.customize';
 
-interface ICoupon {
-  coupons_code: string;
-  title: string;
-  discount_type: 'percent' | 'amount';
-  discount_value: number;
-  min_order_value: number;
-  date_range: [dayjs.Dayjs, dayjs.Dayjs];
-  desciption: string;
-  status: 'ON' | 'OFF';
-}
 
 const AddCoupon = () => {
   const nav = useNavigate();
   const [form] = Form.useForm();
 
-  const onFinish = (values: any) => {
-    const [start_date, end_date] = values.date_range;
-    const couponData: ICoupon = {
-      ...values,
-      start_date: start_date.toISOString(),
-      end_date: end_date.toISOString()
-    };
-    console.log("Coupon:", couponData);
-    message.success("Thêm mã giảm giá thành công!");
-    nav("/coupons");
+  const onFinish = async (values: any) => {
+    try {
+      // Normalize code
+      const code = String(values.coupons_code || '').trim().toUpperCase().replace(/^\$/,'');
+      if (!/^[A-Z0-9]+$/.test(code)) {
+        message.error('Mã giảm giá chỉ gồm chữ HOA và số, không khoảng trắng');
+        return;
+      }
+
+      const [start_date, end_date] = values.date_range;
+      const payload = {
+        code,
+        type: values.discount_type === 'percent' ? 'percent' : 'fixed',
+        value: Number(values.discount_value),
+        minOrderValue: Number(values.min_order_value) || 0,
+        startsAt: start_date.toISOString(),
+        endsAt: end_date.toISOString(),
+        status: values.status === 'ON' ? 'active' : 'inactive',
+        totalUsageLimit: values.totalUsageLimit ? Number(values.totalUsageLimit) : undefined
+      };
+
+      await api.post('/discounts', payload);
+      message.success("Thêm mã giảm giá thành công!");
+      nav("/coupons");
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.message) {
+        message.error(error.response.data.message);
+        console.log('Lỗi thêm mã giảm giá:', error.response.data.message);
+      } else {
+        message.error('Thêm mã giảm giá thất bại!');
+        console.log(error);
+      }
+    }
   };
 
   return (
@@ -45,14 +57,6 @@ const AddCoupon = () => {
                 { min: 3, message: 'Ít nhất 5 ký tự' }
               ]}>
                 <Input placeholder="VD: SUMMER2025" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="Tiêu đề"
-              name="title"
-              rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}>
-                <Input placeholder="Tiêu đề hiển thị" />
             </Form.Item>
           </Col>
         </Row>
@@ -112,13 +116,8 @@ const AddCoupon = () => {
           </Col>
 
           <Col span={12}>
-            <Form.Item
-              label="Mô tả"
-              rules={[
-                { required: true, message: 'Vui lòng nhập mô tả' },
-                { min: 10, message: 'Mô tả ít nhất 10 ký tự' }
-              ]}>
-                <TextArea placeholder="Mô tả hiển thị" rows={3} />
+            <Form.Item label="Số lượng mã" name="totalUsageLimit">
+              <InputNumber style={{ width: '100%' }} min={1} placeholder="VD: 100" />
             </Form.Item>
           </Col>
         </Row>

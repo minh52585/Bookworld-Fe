@@ -52,13 +52,13 @@ export const getDiscountsColumns = (queryClient: any, Del: (id: string) => void)
     key: 'status',
     render: (status: string, record: IDiscounts) => (
       <Switch
-        checked={status === 'Mở'}
+        checked={status === 'active'}
         checkedChildren='Mở'
         unCheckedChildren='Khoá'
         onChange={async (checked) => {
           try {
-            await api.put(`api/discounts/${record._id}`, {
-              status: checked ? 'Mở' : 'Khoá'
+            await api.put(`/discounts/update/${record._id}`, {
+              status: checked ? 'active' : 'inactive'
             })
             message.success('Cập nhật trạng thái thành công!')
             queryClient.invalidateQueries({ queryKey: ['discounts'] })

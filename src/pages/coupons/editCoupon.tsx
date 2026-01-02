@@ -1,78 +1,87 @@
 import { Button, DatePicker, Form, Input, InputNumber, message, Select, Row, Col } from 'antd';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import dayjs from 'dayjs';
+import api from '@/config/axios.customize';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
-const { TextArea } = Input;
 const { RangePicker } = DatePicker;
-
-interface ICoupon {
-  _id: string;
-  coupons_code: string;
-  title: string;
-  discount_type: 'percent' | 'amount';
-  discount_value: number;
-  min_order_value: number;
-  start_date: string;
-  end_date: string;
-  desciption: string;
-  status: 'ON' | 'OFF';
-}
 
 const EditCoupon = () => {
   const nav = useNavigate();
+  const { id } = useParams();
   const [form] = Form.useForm();
-  const couponData: ICoupon = {
-    _id: '123',
-    coupons_code: 'SUMMER2025',
-    title: 'Giảm giá hè 2025',
-    discount_type: 'percent',
-    discount_value: 10,
-    min_order_value: 200000,
-    start_date: '2025-06-01T00:00:00Z',
-    end_date: '2025-06-30T00:00:00Z',
-    desciption: 'Áp dụng cho đơn hàng từ 200.000 trở lên.',
-    status: 'ON',
-  };
 
-  const initialValues = {
-    ...couponData,
-    date_range: [dayjs(couponData.start_date), dayjs(couponData.end_date)],
-  };
+  const { data } = useQuery({
+    queryKey: ['discounts', id],
+    queryFn: async () => {
+      try {
+        const res = await api.get(`/discounts/${id}`)
+        return res.data.data
+      } catch (err) {
+        console.log(err)
+        return null
+      }
+    }
+  })
 
-  const onFinish = (values: any) => {
-    const [start_date, end_date] = values.date_range;
-    const updatedCoupon: ICoupon = {
-      ...couponData,
-      ...values,
-      start_date: start_date.toISOString(),
-      end_date: end_date.toISOString()
-    };
+  useEffect(() => {
+    if (data) {
+      form.setFieldsValue({
+        code: data.code || '',
+        originalCode: data.code || '',
+        discount_type: data.type,
+        discount_value: data.value,
+        min_order_value: data.minOrderValue,
+        status: data.status === 'active' ? 'ON' : 'OFF',
+        totalUsageLimit: data.totalUsageLimit,
+        date_range: [data.startsAt ? dayjs(data.startsAt) : undefined, data.endsAt ? dayjs(data.endsAt) : undefined]
+      })
+    }
+  }, [data])
 
-    console.log('Cập nhật:', updatedCoupon);
-    message.success('Cập nhật mã giảm giá thành công!');
-    nav('/coupons');
-  };
+  const onFinish = async (values: any) => {
+    try {
+      const [start_date, end_date] = values.date_range || [undefined, undefined];
+      const codeNew = values.code ? String(values.code).trim().toUpperCase().replace(/^\$/,'') : undefined
+      const payload: any = {
+        ...(codeNew ? { code: codeNew } : {}),
+        originalCode: values.originalCode,
+        type: values.discount_type === 'percent' ? 'percent' : 'fixed',
+        value: Number(values.discount_value),
+        minOrderValue: Number(values.min_order_value) || 0,
+        startsAt: start_date ? start_date.toISOString() : undefined,
+        endsAt: end_date ? end_date.toISOString() : undefined,
+        status: values.status === 'ON' ? 'active' : 'inactive',
+        totalUsageLimit: values.totalUsageLimit ? Number(values.totalUsageLimit) : undefined
+      }
+      await api.put(`/discounts/update/${id}`, payload)
+      message.success('Cập nhật mã giảm giá thành công!')
+      nav('/coupons')
+    } catch (error: any) {
+      console.log(error)
+      message.error('Cập nhật thất bại')
+    }
+  }
 
   return (
     <>
       <Form
         form={form}
         layout="vertical"
-        initialValues={initialValues}
         onFinish={onFinish}
         style={{ maxWidth: 600, margin: '0 auto' }}
       >
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item label="Mã giảm giá" name="coupons_code" rules={[{ required: true }]}>
-              <Input disabled />
+            <Form.Item label="Mã giảm giá" name="code" rules={[{ required: true }]}>
+              <Input />
             </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Tiêu đề" name="title" rules={[{ required: true }]}>
+            <Form.Item name="originalCode" hidden>
               <Input />
             </Form.Item>
           </Col>
+
         </Row>
 
         <Row gutter={16}>
@@ -113,9 +122,10 @@ const EditCoupon = () => {
               <RangePicker style={{ width: '100%' }} />
             </Form.Item>
           </Col>
+
           <Col span={12}>
-            <Form.Item label="Mô tả" name="desciption" rules={[{ required: true }]}>
-              <TextArea rows={3} />
+            <Form.Item label="Số lượng mã" name="totalUsageLimit">
+              <InputNumber style={{ width: '100%' }} min={1} />
             </Form.Item>
           </Col>
         </Row>
