@@ -23,7 +23,7 @@ const Discounts = () => {
   const mutation = useMutation({
     mutationFn:async(id:string)=>{
       try {
-        await api.delete(`api/discounts/${id}`)
+        await api.delete('/discounts', { data: { id } })
       } catch (error) {
         console.log(error);
       }
