@@ -1,128 +1,131 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
-import { Switch, Table } from "antd";
+import { useEffect, useState } from "react";
+import { Table, Tag, message, Avatar } from "antd";
+import { UserOutlined, CrownOutlined } from "@ant-design/icons";
 
 const Users = () => {
-  const [userData, setUserData] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // 🔐 chỉ dùng token admin
+  const token = localStorage.getItem("admin_token");
 
   useEffect(() => {
+    if (!token) {
+      message.error("Bạn chưa đăng nhập admin");
+      return;
+    }
+
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem("token"); 
-        const res = await axios.get("http://localhost:5004/api/auth/allUser", {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
+        setLoading(true);
+
+        const res = await axios.get(
+          "http://localhost:5004/api/auth/allUser",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (res.data.success) {
-          const formattedData = res.data.data.map((user: any, index: number) => ({
-            id: user._id,
-            stt: index + 1, 
-            usersName: user.name,
-            fullName: user.name,
-            email: user.email,
-            avatar_url: user.avatar_url || `https://i.pravatar.cc/${index + 100}`,
-            role_id: user.role === "admin" ? "Admin" : "User",
-            status: user.status ?? true,
-            created_at: user.createdAt,
-            update_at: user.updatedAt,
-          }));
+          const formatted = res.data.data.map(
+            (u: any, index: number) => ({
+              key: u._id,
+              stt: index + 1,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              createdAt: u.createdAt,
+            })
+          );
 
-          setUserData(formattedData);
+          setUsers(formatted);
         } else {
-          console.error(res.data.message);
+          message.error("Không lấy được danh sách user");
         }
-      } catch (err) {
-        console.error("Lỗi khi lấy dữ liệu người dùng:", err);
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          message.error("Token admin không hợp lệ hoặc hết hạn");
+        } else if (err.response?.status === 403) {
+          message.error("Bạn không có quyền admin");
+        } else {
+          message.error("Lỗi server");
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchUsers();
-  }, []);
-
-  const toggleStatus = async (id: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.patch(
-        `http://localhost:5004/api/auth/users/${id}/status`,
-        {},
-        {
-          headers: { Authorization: token ? `Bearer ${token}` : "" },
-        }
-      );
-
-      if (res.data.success) {
-        const updatedData = userData.map(user =>
-          user.id === id ? { ...user, status: res.data.data.status } : user
-        );
-        setUserData(updatedData);
-      } else {
-        console.error(res.data.message);
-      }
-    } catch (err) {
-      console.error("Lỗi khi cập nhật trạng thái:", err);
-    }
-  };
+  }, [token]);
 
   const columns = [
-    { title: "STT", dataIndex: "stt", key: "stt" },
-    { title: "Tên đăng nhập", dataIndex: "usersName", key: "usersName" },
-    { title: "Tên đầy đủ", dataIndex: "fullName", key: "fullName" },
-    { title: "Email", dataIndex: "email", key: "email" },
     {
-      title: "Ảnh đại diện",
-      dataIndex: "avatar_url",
-      key: "avatar_url",
-      render: (avatar_url: string) => (
-        <img
-          src={avatar_url}
-          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: "50%" }}
-          alt="avatar"
-        />
+      title: "STT",
+      dataIndex: "stt",
+      width: 60,
+    },
+    {
+      title: "Người dùng",
+      render: (_: any, record: any) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Avatar
+            icon={
+              record.role === "admin" ? <CrownOutlined /> : <UserOutlined />
+            }
+            style={{
+              backgroundColor:
+                record.role === "admin" ? "#1677ff" : "#87d068",
+            }}
+          />
+          <div>
+            <div style={{ fontWeight: 600 }}>{record.name}</div>
+            <div style={{ fontSize: 12, color: "#888" }}>
+              {record.email}
+            </div>
+          </div>
+        </div>
       ),
     },
-    { title: "Vai trò", dataIndex: "role_id", key: "role_id" },
+    {
+      title: "Quyền",
+      dataIndex: "role",
+      width: 120,
+      render: (role: string) =>
+        role === "admin" ? (
+          <Tag color="blue">ADMIN</Tag>
+        ) : (
+          <Tag color="green">USER</Tag>
+        ),
+    },
+    {
+      title: "Ngày tạo",
+      dataIndex: "createdAt",
+      width: 160,
+      render: (date: string) =>
+        new Date(date).toLocaleDateString("vi-VN"),
+    },
     {
       title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status: boolean) => (
-        <span
-          style={{
-            backgroundColor: status ? "#e6ffe6" : "#ffe6e6",
-            color: status ? "limegreen" : "tomato",
-            fontWeight: 600,
-            padding: "3px 6px",
-            borderRadius: "17px",
-            display: "inline-block",
-          }}
-        >
-          {status ? "ON" : "OFF"}
-        </span>
-      ),
-    },
-    {
-      title: "Hành động",
-      dataIndex: "action",
-      render: (_: any, record: { id: string; status: boolean }) => (
-        <Switch
-          checked={record.status}
-          onChange={() => toggleStatus(record.id)}
-          style={{ minWidth: 30 }}
-        />
+      width: 140,
+      render: () => (
+        <Tag color="success">Hoạt động</Tag>
       ),
     },
   ];
 
   return (
     <>
-      <h1 style={{ marginBottom: 24 }}>Danh sách khách hàng</h1>
+      <h1 style={{ marginBottom: 16 }}>Quản lý người dùng</h1>
+
       <Table
         columns={columns}
-        dataSource={userData}
-        rowKey="id"
-        pagination={{ pageSize: 4 }}
+        dataSource={users}
+        loading={loading}
+        pagination={{ pageSize: 5 }}
+        bordered
       />
     </>
   );

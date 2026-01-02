@@ -20,4 +20,7 @@ export const breadcrumbNameMap: Record<string, { group: string, label: string, a
   '/coupons/add': { group: 'Quản lý', label: 'Mã giảm giá', action: "Thêm mới" },
   '/coupons/edit/:id': { group: 'Quản lý', label: 'Mã giảm giá', action: "Cập nhật" },
   '/reviews': { group: 'Quản lý', label: 'Đánh giá' },
+  '/wallets': { group: 'Quản lý', label: 'Giao dịch ví' },
+  '/wallets/management': { group: 'Quản lý', label: 'Quản lý ví' },
+  '/wallets/:walletId/transactions': { group: 'Quản lý', label: 'Giao dịch ví', action: "Chi tiết" },
 }

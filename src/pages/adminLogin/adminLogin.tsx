@@ -31,7 +31,7 @@ const AdminLogin = () => {
       localStorage.setItem("admin_user", JSON.stringify(user));
       toast.success("Đăng nhập admin thành công!");
       navigate("/");
-    } catch (err: any) {
+    } catch (err: any)  {
       setError(err?.response?.data?.message || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
