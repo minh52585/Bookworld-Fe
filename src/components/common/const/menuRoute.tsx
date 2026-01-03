@@ -69,10 +69,10 @@ export const itemsRoute: MenuProps['items'] = [
             key: '/wallets',
             label: <Link to={'/wallets'}>Giao dịch</Link>
           },
-          {
-            key: '/wallets/management',
-            label: <Link to={'/wallets/management'}>Quản lý ví</Link>
-          }
+          // {
+          //   key: '/wallets/management',
+          //   label: <Link to={'/wallets/management'}>Quản lý ví</Link>
+          // }
         ]
       },
     ]

@@ -238,7 +238,7 @@ export const transactionAPI = {
   },
 
   // Approve withdrawal - Sử dụng endpoint /approveWithDrawal/:transactionId
-  approveWithdraw: async (transactionId: string): Promise<{ success: boolean; message?: string }> => {
+  approveWithdrawal: async (transactionId: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const response = await axios.put(`${API_BASE_URL}/walletTransaction/approveWithDrawal/${transactionId}`, {}, {
         headers: getAuthHeaders(),

@@ -10,7 +10,7 @@ const Wallets = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [summary, setSummary] = useState<{totalDeposit: number;totalWithdraw: number;}>({totalDeposit: 0,totalWithdraw: 0,});
   // Fetch all transactions
   const fetchTransactions = async () => {
     setLoading(true);
@@ -23,6 +23,9 @@ const Wallets = () => {
           key: transaction._id,
         }));
         setTransactions(formattedData);
+         if (response.summary) {
+          setSummary(response.summary);
+        }
         message.success(`Đã tải ${formattedData.length} giao dịch từ backend`);
       } else {
         message.error(response.message || 'Lỗi khi lấy danh sách giao dịch');
@@ -55,6 +58,23 @@ const Wallets = () => {
   useEffect(() => {
     fetchTransactions();
   }, []);
+  const handleApproveWithdraw = async (transactionId: string) => {
+    try {
+      setLoading(true);
+      const res = await transactionAPI.approveWithdrawal(transactionId);
+
+      if (res.success) {
+        message.success('Xác nhận rút tiền thành công');
+        fetchTransactions(); // reload data
+      } else {
+        message.error(res.message || 'Xác nhận thất bại');
+      }
+    } catch (error: any) {
+      message.error('Lỗi khi xác nhận rút tiền');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -150,12 +170,27 @@ const Wallets = () => {
     {
       title: 'Hành động',
       key: 'actions',
-      render: (record: WalletTransaction) => (
-        <Tag color={record.status === 'Thành công' ? 'green' : 'blue'}>
-          {record.status === 'Thành công' ? 'Đã xử lý' : 'Tự động xử lý'}
-        </Tag>
-      ),
-    },
+      render: (record: WalletTransaction) => {
+        if (record.type === 'Rút tiền' && record.status === 'Chờ xử lý') {
+          return (
+            <Button
+              type="primary"
+              danger
+              size="small"
+              onClick={() => handleApproveWithdraw(record._id)}
+            >
+              Xác nhận rút
+            </Button>
+          );
+        }
+
+        return (
+          <Tag color={record.status === 'Thành công' ? 'green' : 'default'}>
+            {record.status === 'Thành công' ? 'Đã xử lý' : '—'}
+          </Tag>
+        );
+      },
+    }
   ];
 
   return (
@@ -170,7 +205,29 @@ const Wallets = () => {
         </Button>
       </div>
 
-     
+      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+        <Alert
+          type="success"
+          showIcon
+          message="Tổng tiền nạp"
+          description={
+            <strong style={{ fontSize: 18 }}>
+              {formatCurrency(summary.totalDeposit)}
+            </strong>
+          }
+        />
+
+        <Alert
+          type="error"
+          showIcon
+          message="Tổng tiền rút"
+          description={
+            <strong style={{ fontSize: 18 }}>
+              {formatCurrency(summary.totalWithdraw)}
+            </strong>
+          }
+        />
+      </div>
 
       <Table
         columns={columns}
