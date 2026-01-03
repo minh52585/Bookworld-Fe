@@ -1,4 +1,4 @@
-import { BarChartOutlined, BranchesOutlined, DashboardOutlined, DatabaseOutlined, FormOutlined, GiftOutlined, ShoppingCartOutlined, ShoppingOutlined, TagOutlined, TeamOutlined } from '@ant-design/icons'
+import { BarChartOutlined, BranchesOutlined, DashboardOutlined, DatabaseOutlined, FormOutlined, GiftOutlined, ShoppingCartOutlined, ShoppingOutlined, TagOutlined, TeamOutlined, WalletOutlined } from '@ant-design/icons'
 import { MenuProps } from 'antd'
 import { Link } from 'react-router'
 
@@ -59,6 +59,21 @@ export const itemsRoute: MenuProps['items'] = [
         key: '/reviews',
         icon: <FormOutlined />,
         label: <Link to={'/reviews'}>Đánh giá</Link>
+      },
+      {
+        key: 'wallets-menu',
+        icon: <WalletOutlined />,
+        label: 'Quản lý ví',
+        children: [
+          {
+            key: '/wallets',
+            label: <Link to={'/wallets'}>Giao dịch</Link>
+          },
+          {
+            key: '/wallets/management',
+            label: <Link to={'/wallets/management'}>Quản lý ví</Link>
+          }
+        ]
       },
     ]
   }
