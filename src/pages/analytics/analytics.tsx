@@ -141,7 +141,7 @@ const Analytics = () => {
   return (
     <div style={{ padding: 20 }}>
       <Title level={3}>📊 Thống kê doanh thu</Title>
-      <Card style={{ marginBottom: 20 }}>
+      {/* <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
           <Col span={8}>
             <Text strong>Khoảng ngày</Text>
@@ -180,7 +180,7 @@ const Analytics = () => {
             </Button>
           </Col>
         </Row>
-      </Card>
+      </Card> */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
         <Col span={6}>
           <Card>

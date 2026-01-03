@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Popconfirm } from "antd";
+import { Modal, Input } from "antd";
 
 interface Order {
   _id: string;
@@ -24,6 +25,9 @@ const OrdersAdmin = () => {
   const [data, setData] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [msgApi, contextHolder] = message.useMessage();
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelNote, setCancelNote] = useState("");
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchOrders = async () => {
@@ -82,6 +86,51 @@ const OrdersAdmin = () => {
     fetchOrders();
   }, []);
 
+  const openCancelModal = (orderId: string) => {
+  setCancelOrderId(orderId);
+  setCancelNote("");
+  setCancelModalOpen(true);
+};
+
+  const confirmCancelOrder = async () => {
+  if (!cancelOrderId) return;
+
+  const token = localStorage.getItem("admin_token");
+  if (!token) {
+    msgApi.error("Chưa đăng nhập admin");
+    return;
+  }
+
+  if (!cancelNote.trim()) {
+    msgApi.warning("Vui lòng nhập lý do hủy đơn");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await axios.put(
+      `http://localhost:5004/api/orders/${cancelOrderId}`,
+      { note: cancelNote }, // ✅ gửi note cho backend
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    msgApi.success("Đã hủy đơn hàng");
+    setCancelModalOpen(false);
+    fetchOrders();
+  } catch (error: any) {
+    msgApi.error(
+      error.response?.data?.message || "Hủy đơn hàng thất bại"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
   const approveReturn = async (orderId: string) => {
   const token = localStorage.getItem("admin_token");
   if (!token) {
@@ -130,12 +179,12 @@ const OrdersAdmin = () => {
       key: "_id",
       render: (id: string) => `#${id?.slice(-8)}`
     },
-    { 
-      title: "Khách hàng", 
-      dataIndex: "user_id", 
-      key: "user_id", 
-      render: (user: any) => typeof user === 'string' ? `User ${user.slice(-6)}` : user?.name || "—"
-    },
+    // { 
+    //   title: "Khách hàng", 
+    //   dataIndex: "user_id", 
+    //   key: "user_id", 
+    //   render: (user: any) => typeof user === 'string' ? `User ${user.slice(-6)}` : user?.name || "—"
+    // },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -166,6 +215,15 @@ const OrdersAdmin = () => {
           Chi tiết
         </Button>
       </Link>
+      {record.status === "Chờ xử lý" && (
+      <Button
+        size="small"
+        danger
+        onClick={() => openCancelModal(record._id)}
+      >
+        Hủy đơn
+      </Button>
+    )}
 
       {record.status === "Đang yêu cầu Trả hàng/Hoàn tiền" && (
         <Popconfirm
@@ -211,6 +269,25 @@ const OrdersAdmin = () => {
           locale={{ emptyText: "Chưa có đơn hàng nào" }}
         />
       </Card>
+
+      <Modal
+          title="Hủy đơn hàng"
+          open={cancelModalOpen}
+          onOk={confirmCancelOrder}
+          onCancel={() => setCancelModalOpen(false)}
+          okText="Xác nhận hủy"
+          cancelText="Đóng"
+          confirmLoading={loading}
+        >
+          <p>Vui lòng nhập lý do hủy đơn:</p>
+          <Input.TextArea
+            rows={4}
+            placeholder="Nhập lý do hủy đơn..."
+            value={cancelNote}
+            onChange={(e) => setCancelNote(e.target.value)}
+          />
+        </Modal>
+
     </div>
   );
 };

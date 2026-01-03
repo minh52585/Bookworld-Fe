@@ -166,27 +166,27 @@ const ProductsPage = () => {
           <Tag>Chưa có</Tag>
         ),
     },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      width: 110,
-      align: 'center',
-      render: (status: boolean, record: IProductWithCategory) => (
-        <Switch
-          checked={status}
-          onChange={async (checked) => {
-            const token = localStorage.getItem('admin_token');
-            await api.put(
-              `/products/${record._id}`,
-              { status: checked },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            message.success('Cập nhật trạng thái thành công');
-            queryClient.invalidateQueries({ queryKey: ['products'] });
-          }}
-        />
-      ),
-    },
+    // {
+    //   title: 'Trạng thái',
+    //   dataIndex: 'status',
+    //   width: 110,
+    //   align: 'center',
+    //   render: (status: boolean, record: IProductWithCategory) => (
+    //     <Switch
+    //       checked={status}
+    //       onChange={async (checked) => {
+    //         const token = localStorage.getItem('admin_token');
+    //         await api.put(
+    //           `/products/${record._id}`,
+    //           { status: checked },
+    //           { headers: { Authorization: `Bearer ${token}` } }
+    //         );
+    //         message.success('Cập nhật trạng thái thành công');
+    //         queryClient.invalidateQueries({ queryKey: ['products'] });
+    //       }}
+    //     />
+    //   ),
+    // },
     {
       title: 'Hành động',
       width: 130,

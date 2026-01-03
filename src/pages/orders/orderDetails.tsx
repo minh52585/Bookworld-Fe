@@ -245,7 +245,7 @@ const OrderDetailsAdmin = () => {
             </Tag>
           </Item>
 
-          <Item label="Khách hàng">
+          <Item label="Người Gửi">
             <div>
               <strong>{order.user_id?.name || `User ${order.user_id?.slice?.(-6) || "Unknown"}`}</strong>
               <br />
