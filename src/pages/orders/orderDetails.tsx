@@ -185,7 +185,7 @@ const OrderDetailsAdmin = () => {
       if (res.data?.success) {
         msgApi.success(res.data.message || "Cập nhật trạng thái thành công");
         setStatusModalVisible(false);
-        setSelectedStatus("");
+        setSelectedStatus();
         setStatusNote("");
         fetchOrder(); // Reload order data
       } else {
@@ -225,7 +225,7 @@ const OrderDetailsAdmin = () => {
           <Item label="Trạng thái">
             <Space>
               <Tag color={STATUS_CONFIG[order.status]?.color} icon={STATUS_CONFIG[order.status]?.icon}>
-                {order.status}
+                {order?.status}
               </Tag>
                 {getAvailableStatuses(order.status).length > 0 && (
                 <Button
@@ -393,7 +393,7 @@ const OrderDetailsAdmin = () => {
           <Select
             style={{ width: "100%" }}
             placeholder="Chọn trạng thái mới"
-            value={selectedStatus}
+            value={selectedStatus || order.status}
             onChange={setSelectedStatus}
           >
             {getAvailableStatuses(order.status).map((st) => (
