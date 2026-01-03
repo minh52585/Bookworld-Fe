@@ -179,12 +179,28 @@ const OrdersAdmin = () => {
       key: "_id",
       render: (id: string) => `#${id?.slice(-8)}`
     },
-    // { 
-    //   title: "Khách hàng", 
-    //   dataIndex: "user_id", 
-    //   key: "user_id", 
-    //   render: (user: any) => typeof user === 'string' ? `User ${user.slice(-6)}` : user?.name || "—"
-    // },
+   { 
+  title: "Khách hàng", 
+  dataIndex: "user_id", 
+  key: "user_id", 
+  render: (user: any) => {
+    if (!user) return "—";
+
+    // Nếu backend trả về string (chưa populate)
+    if (typeof user === "string") {
+      return `User #${user.slice(-6)}`;
+    }
+
+    // Nếu đã populate
+    return (
+      user.name ||
+      user.email ||
+      `User #${user._id?.slice(-6)}` ||
+      "—"
+    );
+  }
+},
+
     {
       title: "Trạng thái",
       dataIndex: "status",
