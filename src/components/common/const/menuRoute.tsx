@@ -41,11 +41,6 @@ export const itemsRoute: MenuProps['items'] = [
         label: <Link to={'/variants'}>Biến thể</Link>
       },
       {
-        key: '/discounts',
-        icon: <TagOutlined />,
-        label: <Link to={'/discounts'}>Khuyến mại</Link>
-      },
-      {
         key: '/categories',
         icon: <DatabaseOutlined />,
         label: <Link to={'/categories'}>Danh mục</Link>
