@@ -171,14 +171,7 @@ const WalletTransactions = () => {
           Quay lại danh sách ví
         </Button>
         
-        <Alert
-          message="Chi tiết giao dịch ví"
-          description={`Hiển thị tất cả giao dịch thực của ví ID: ${walletId} từ backend. Nếu không có dữ liệu, có thể ví này chưa có giao dịch nào.`}
-          type="info"
-          icon={<InfoCircleOutlined />}
-          style={{ marginBottom: 16 }}
-          showIcon
-        />
+      
       </div>
 
       <div style={{ marginBottom: 24 }}>

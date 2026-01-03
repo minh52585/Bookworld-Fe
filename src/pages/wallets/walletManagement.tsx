@@ -165,14 +165,7 @@ const WalletManagement = () => {
         </div>
       </div>
 
-      <Alert
-        message="Quản lý ví người dùng"
-        description="Hiển thị 1 ví thật có trong database cho user NM. Số dư: 200,000 VND."
-        type="info"
-        icon={<InfoCircleOutlined />}
-        style={{ marginBottom: 16 }}
-        showIcon
-      />
+     
 
       <Table
         columns={columns}
