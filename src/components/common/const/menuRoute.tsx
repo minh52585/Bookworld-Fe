@@ -1,4 +1,4 @@
-import { BarChartOutlined, BranchesOutlined, DashboardOutlined, DatabaseOutlined, FormOutlined, GiftOutlined, ShoppingCartOutlined, ShoppingOutlined, TagOutlined, TeamOutlined, WalletOutlined } from '@ant-design/icons'
+import { BarChartOutlined, BranchesOutlined, TransactionOutlined, DashboardOutlined, DatabaseOutlined, FormOutlined, GiftOutlined, ShoppingCartOutlined, ShoppingOutlined, TagOutlined, TeamOutlined, WalletOutlined } from '@ant-design/icons'
 import { MenuProps } from 'antd'
 import { Link } from 'react-router'
 
@@ -61,19 +61,14 @@ export const itemsRoute: MenuProps['items'] = [
         label: <Link to={'/reviews'}>Đánh giá</Link>
       },
       {
-        key: 'wallets-menu',
+        key: 'walletTransaction',
+        icon: <TransactionOutlined />,
+        label: <Link to={'/walletTransaction'}>Quản lý giao dịch</Link>
+      },
+      {
+        key: 'wallets',
         icon: <WalletOutlined />,
-        label: 'Quản lý ví',
-        children: [
-          {
-            key: '/wallets',
-            label: <Link to={'/wallets'}>Giao dịch</Link>
-          },
-          // {
-          //   key: '/wallets/management',
-          //   label: <Link to={'/wallets/management'}>Quản lý ví</Link>
-          // }
-        ]
+        label: <Link to={'/wallets'}>Quản lý ví</Link>
       },
     ]
   }

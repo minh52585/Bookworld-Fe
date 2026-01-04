@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Table, Tag, Alert, App, Button } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { Table, Button, Tag, Alert, App } from 'antd';
+import { ArrowLeftOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { useParams, useNavigate } from 'react-router-dom';
 import { transactionAPI } from '@/apis/wallets';
 import { WalletTransaction } from '@/types/wallet';
 
-const Wallets = () => {
-  const { message } = App.useApp();
+const WalletTransactions = () => {
+  const { walletId } = useParams<{ walletId: string }>();
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<{totalDeposit: number;totalWithdraw: number;}>({totalDeposit: 0,totalWithdraw: 0,});
-  // Fetch all transactions
+
+  // Fetch transactions for specific wallet
   const fetchTransactions = async () => {
+    if (!walletId) return;
+    
     setLoading(true);
     try {
-      const response = await transactionAPI.getAllTransactions();
+      const response = await transactionAPI.getTransactionsByWalletId(walletId);
       if (response.success) {
         const formattedData = response.data.map((transaction: WalletTransaction, index: number) => ({
           ...transaction,
@@ -23,33 +26,13 @@ const Wallets = () => {
           key: transaction._id,
         }));
         setTransactions(formattedData);
-         if (response.summary) {
-          setSummary(response.summary);
-        }
-        message.success(`Đã tải ${formattedData.length} giao dịch từ backend`);
       } else {
-        message.error(response.message || 'Lỗi khi lấy danh sách giao dịch');
+        message.error(response.message || 'Lỗi khi lấy giao dịch');
       }
     } catch (error: any) {
       console.error('API Error:', error);
-      if (error.message.includes('UNAUTHORIZED')) {
-        message.error({
-          content: 'Token admin hết hạn. Vui lòng đăng nhập lại.',
-          duration: 5,
-        });
-      } else if (error.message.includes('FORBIDDEN')) {
-        message.error('Tài khoản không có quyền admin.');
-      } else if (error.message.includes('Route not found')) {
-        message.warning({
-          content: 'Backend chưa có route cho wallet transactions.',
-          duration: 10,
-        });
-      } else if (error.message.includes('ERR_CONNECTION_REFUSED')) {
-        message.error('Backend server chưa khởi động.');
-      } else {
-        message.error('Không thể lấy danh sách giao dịch từ backend.');
-      }
-      setTransactions([]);
+      message.error('Không thể lấy danh sách giao dịch của ví này từ backend.');
+      setTransactions([]); // Set empty array thay vì dữ liệu mẫu
     } finally {
       setLoading(false);
     }
@@ -57,24 +40,7 @@ const Wallets = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
-  const handleApproveWithdraw = async (transactionId: string) => {
-    try {
-      setLoading(true);
-      const res = await transactionAPI.approveWithdrawal(transactionId);
-
-      if (res.success) {
-        message.success('Xác nhận rút tiền thành công');
-        fetchTransactions(); // reload data
-      } else {
-        message.error(res.message || 'Xác nhận thất bại');
-      }
-    } catch (error: any) {
-      message.error('Lỗi khi xác nhận rút tiền');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [walletId]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -84,13 +50,29 @@ const Wallets = () => {
     }).format(amount);
   };
 
+  // Get transaction type color
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'Nạp tiền':
+        return 'green';
+      case 'Rút tiền':
+        return 'red';
+      case 'Thanh toán':
+        return 'orange';
+      case 'Hoàn tiền':
+        return 'cyan';
+      default:
+        return 'default';
+    }
+  };
+
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Chờ xử lý':
-        return 'blue';
       case 'Thành công':
         return 'green';
+      case 'Chờ xử lý':
+        return 'orange';
       case 'Thất bại':
         return 'red';
       case 'Đã hủy':
@@ -100,7 +82,6 @@ const Wallets = () => {
     }
   };
 
-  // Transaction columns
   const columns = [
     {
       title: 'STT',
@@ -125,7 +106,7 @@ const Wallets = () => {
       dataIndex: 'type',
       key: 'type',
       render: (type: string) => (
-        <Tag color={type === 'Nạp tiền' ? 'green' : 'red'}>
+        <Tag color={getTypeColor(type)}>
           {type}
         </Tag>
       ),
@@ -137,12 +118,17 @@ const Wallets = () => {
       render: (amount: number, record: WalletTransaction) => (
         <span style={{ 
           fontWeight: 'bold', 
-          color: record.type === 'Nạp tiền' ? '#52c41a' : '#ff4d4f',
-          fontSize: '16px'
+          color: record.type === 'Nạp tiền' ? '#52c41a' : '#ff4d4f' 
         }}>
           {record.type === 'Nạp tiền' ? '+' : '-'}{formatCurrency(amount)}
         </span>
       ),
+    },
+    {
+      title: 'Mô tả',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
     },
     {
       title: 'Trạng thái',
@@ -155,78 +141,41 @@ const Wallets = () => {
       ),
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
+      title: 'Phương thức rút',
+      dataIndex: 'withdrawalMethod',
+      key: 'withdrawalMethod',
+      render: (method: any) => {
+        if (!method) return '-';
+        if (typeof method === 'object') {
+          return method.name || method._id;
+        }
+        return method;
+      },
     },
-  
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date: string) => new Date(date).toLocaleString('vi-VN'),
     },
-    {
-      title: 'Hành động',
-      key: 'actions',
-      render: (record: WalletTransaction) => {
-        if (record.type === 'Rút tiền' && record.status === 'Chờ xử lý') {
-          return (
-            <Button
-              type="primary"
-              danger
-              size="small"
-              onClick={() => handleApproveWithdraw(record._id)}
-            >
-              Xác nhận rút
-            </Button>
-          );
-        }
-
-        return (
-          <Tag color={record.status === 'Thành công' ? 'green' : 'default'}>
-            {record.status === 'Thành công' ? 'Đã xử lý' : '—'}
-          </Tag>
-        );
-      },
-    }
   ];
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1>Giao dịch ví</h1>
+      <div style={{ marginBottom: 24 }}>
         <Button
-          type="primary"
-          onClick={() => navigate('/wallets/management')}
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/wallets')}
+          style={{ marginBottom: 16 }}
         >
-          Quản lý ví
+          Quay lại danh sách ví
         </Button>
+        
+      
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-        <Alert
-          type="success"
-          showIcon
-          message="Tổng tiền nạp"
-          description={
-            <strong style={{ fontSize: 18 }}>
-              {formatCurrency(summary.totalDeposit)}
-            </strong>
-          }
-        />
-
-        <Alert
-          type="error"
-          showIcon
-          message="Tổng tiền rút"
-          description={
-            <strong style={{ fontSize: 18 }}>
-              {formatCurrency(summary.totalWithdraw)}
-            </strong>
-          }
-        />
+      <div style={{ marginBottom: 24 }}>
+        <h1>Lịch sử giao dịch ví</h1>
       </div>
 
       <Table
@@ -239,10 +188,10 @@ const Wallets = () => {
           showQuickJumper: true,
           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giao dịch`,
         }}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1000 }}
       />
     </div>
   );
 };
 
-export default Wallets;
+export default WalletTransactions;
