@@ -1,16 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Table, Tag, Alert, App, Button } from 'antd';
+import { Table, Tag, Alert, App, Button, Modal, Upload, Form, Image} from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { transactionAPI } from '@/apis/wallets';
 import { WalletTransaction } from '@/types/wallet';
+import { API_BASE_URL } from '@/config/adminAxios';
+import axios from "axios";
+import { showNotification } from "../../utils/notification";
+import dayjs from "dayjs";
+
 
 const Wallets = () => {
+  const [form] = Form.useForm();
   const { message } = App.useApp();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<{totalDeposit: number;totalWithdraw: number;}>({totalDeposit: 0,totalWithdraw: 0,});
+  const [approveModalOpen, setApproveModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
   // Fetch all transactions
   const fetchTransactions = async () => {
     setLoading(true);
@@ -54,27 +64,65 @@ const Wallets = () => {
       setLoading(false);
     }
   };
+  const uploadImage = async (file: File) => {
+      if (!file) return;
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'reacttest');
+  
+      try {
+        const { data } = await axios.post('https://api.cloudinary.com/v1_1/dkpfaleot/image/upload', formData);
+        const url = data.secure_url || data.url;
+        setImageUrl(url);
+        form.setFieldsValue({ image_transaction: url });
+        setLoading(false);
+        return url;
+      } catch (err) {
+        message.error('Upload ảnh thất bại');
+        setLoading(false);
+        throw err;
+      }
+    };
 
   useEffect(() => {
     fetchTransactions();
   }, []);
-  const handleApproveWithdraw = async (transactionId: string) => {
+
+  const handleApproveWithdraw = (transactionId: string) => {
+  setSelectedTransaction(transactionId);
+  setApproveModalOpen(true);
+  };
+
+  const submitApproveWithdraw = async () => {
+    if (!imageUrl) return;
+
     try {
       setLoading(true);
-      const res = await transactionAPI.approveWithdrawal(transactionId);
+      const token = localStorage.getItem('admin_token') || localStorage.getItem('token')
+      await axios.put(
+        `${API_BASE_URL}/walletTransaction/approveWithDrawal/${selectedTransaction}`,
+        {
+          image_transaction: imageUrl,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      if (res.success) {
-        message.success('Xác nhận rút tiền thành công');
-        fetchTransactions(); // reload data
-      } else {
-        message.error(res.message || 'Xác nhận thất bại');
-      }
-    } catch (error: any) {
-      message.error('Lỗi khi xác nhận rút tiền');
+      showNotification("success", "Duyệt rút tiền thành công");
+      setApproveModalOpen(false);
+      setImageUrl(null);
+      fetchTransactions();
+    } catch (err: any) {
+      showNotification("error", err.response?.data?.message || "Có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
   };
+
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -83,6 +131,10 @@ const Wallets = () => {
       currency: 'VND',
     }).format(amount);
   };
+  const handleUploadImage = async (file: File) => {
+  const url = await uploadImage(file);
+  setImageUrl(url);
+};
 
   // Get status color
   const getStatusColor = (status: string) => {
@@ -168,6 +220,33 @@ const Wallets = () => {
       render: (date: string) => new Date(date).toLocaleString('vi-VN'),
     },
     {
+      title: "Ảnh giao dịch",
+      dataIndex: "image_transaction",
+      key: "image_transaction",
+      align: "center",
+      render: (url: string) =>
+        url ? (
+          <Image
+            width={50}
+            src={url}
+            style={{ borderRadius: 6 }}
+            preview={{
+              mask: "Xem ảnh",
+            }}
+          />
+        ) : (
+          <span>—</span>
+        ),
+    },
+    {
+      title: "Thời gian duyệt",
+      dataIndex: "approvedWithDrawalAt",
+      key: "approvedWithDrawalAt",
+      align: "center",
+      render: (value: string) =>
+        value ? dayjs(value).format("DD/MM/YYYY HH:mm:ss") : "—",
+    },
+    {
       title: 'Hành động',
       key: 'actions',
       render: (record: WalletTransaction) => {
@@ -179,7 +258,7 @@ const Wallets = () => {
               size="small"
               onClick={() => handleApproveWithdraw(record._id)}
             >
-              Xác nhận rút
+              Duyệt
             </Button>
           );
         }
@@ -197,12 +276,9 @@ const Wallets = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1> Quản lý giao dịch</h1>
-        <Button
-          type="primary"
-          onClick={() => navigate('/wallets/management')}
-        >
-          Quản lý ví
-        </Button>
+        <Button onClick={fetchTransactions} type="primary" loading={loading}>
+            Làm mới
+          </Button>
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
@@ -241,7 +317,50 @@ const Wallets = () => {
         }}
         scroll={{ x: 1200 }}
       />
+
+      <Modal
+        title="Duyệt lệnh nút"
+        open={approveModalOpen}
+        onCancel={() => {
+          setApproveModalOpen(false);
+          setImageUrl(null);
+        }}
+        footer={[
+          <Button key="cancel" onClick={() => setApproveModalOpen(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            danger
+            disabled={!imageUrl}
+            loading={loading}
+            onClick={submitApproveWithdraw}
+          >
+            Xác nhận
+          </Button>,
+        ]}
+      >
+        <Upload
+          beforeUpload={(file) => {
+            handleUploadImage(file);
+            return false;
+          }}
+          maxCount={1}
+          accept="image/*"
+        >
+          <Button loading={loading}>Upload ảnh giao dịch</Button>
+        </Upload>
+
+        {imageUrl && (
+          <div style={{ marginTop: 12 }}>
+            <img src={imageUrl} alt="preview" style={{ width: "100%" }} />
+          </div>
+        )}
+    </Modal>
     </div>
+
+
   );
 };
 
