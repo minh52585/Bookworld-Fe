@@ -219,7 +219,7 @@ const productChartConfig = {
 
   return (
     <div style={{ padding: 20 }}>
-      <Title level={3}>📊 Thống kê doanh thu</Title>
+      <Title level={3}>📊 Thống kê doanh thu </Title>
 
         <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
@@ -354,3 +354,4 @@ const productChartConfig = {
 };
 
 export default Analytics;
+g
