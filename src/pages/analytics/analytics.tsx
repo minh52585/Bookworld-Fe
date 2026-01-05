@@ -115,12 +115,23 @@ const Analytics = () => {
       setTotalRevenue(rev.totalRevenue || 0);
       setTotalOrders(rev.totalOrders || 0);
 
+      // Fetch product revenue filtered (used for the product revenue chart)
       const productRes = await api.get("/analytics/revenue-by-product", {
         params,
       });
       const productData = productRes.data?.data || [];
       setProductRevenue(productData);
-      setBestProduct(productData[0]?.productName || "Không có");
+
+      // Also fetch the overall best product (do not include productId filter)
+      const bestParams: any = {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      };
+      const productResOverall = await api.get("/analytics/revenue-by-product", {
+        params: bestParams,
+      });
+      const overallProductData = productResOverall.data?.data || [];
+      setBestProduct(overallProductData[0]?.productName || "Không có");
 
       const dailyRes = await api.get("/analytics/revenue-daily", { params });
       const dailyData =
