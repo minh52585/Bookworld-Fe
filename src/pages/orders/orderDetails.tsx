@@ -23,6 +23,7 @@ import {
   ShoppingOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import { Image } from "antd";
 
 
 const { Item } = Descriptions;
@@ -58,6 +59,7 @@ interface OrderDetail {
   note: string;
   createdAt: string;
   updatedAt: string;
+  images_return?: [];
 }
 
 /* =========================
@@ -104,15 +106,12 @@ const OrderDetailsAdmin = () => {
 
   // case đặc biệt
   if (current === "Giao hàng không thành công") {
-    return ["Đang giao hàng", "Giao hàng thành công"];
+    return ["Đang giao hàng"];
   }
 
   // mặc định: chỉ đi lên
   return flow.slice(index + 1);
 };
-
-
-
   /* =========================
      FETCH ORDER
   ========================= */
@@ -281,8 +280,9 @@ const OrderDetailsAdmin = () => {
               </div>
             </Item>
           )}
-
           {order.note && <Item label="Ghi chú" span={2}>{order.note}</Item>}
+
+       
         </Descriptions>
 
         <Divider />
