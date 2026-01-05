@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Card,
   DatePicker,
@@ -9,74 +9,124 @@ import {
   Typography,
   message,
 } from "antd";
-import { Column } from "@ant-design/plots";
+import {
+  DollarOutlined,
+  ShoppingCartOutlined,
+  FireOutlined,
+  BookOutlined,
+} from "@ant-design/icons";
+import { Area, Column } from "@ant-design/plots";
 import api from "../../config/axios.customize";
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
+/* ================= FORMAT ================= */
+const formatMoney = (value: number) =>
+  `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+
+const formatDateVN = (value: string) => {
+  const d = new Date(value);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+};
+
 const Analytics = () => {
-  const [filters, setFilters] = useState<any>({
-    startDate: null,
-    endDate: null,
-    productId: null,
+  /* ================= FILTER ================= */
+  const [filters, setFilters] = useState({
+    startDate: null as string | null,
+    endDate: null as string | null,
+    type: "day",
   });
 
   const [products, setProducts] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+
+  /* ================= DATA ================= */
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [bestProduct, setBestProduct] = useState("Không có");
+  const [rawRevenue, setRawRevenue] = useState<any[]>([]);
   const [dailyRevenue, setDailyRevenue] = useState<any[]>([]);
   const [productRevenue, setProductRevenue] = useState<any[]>([]);
 
-  //load products
+  /* ================= GROUP DATA ================= */
+  const groupRevenue = (data: any[], type: string) => {
+    const map = new Map<string, number>();
+
+    data.forEach((item) => {
+      const date = new Date(item.time);
+      let key = "";
+
+      if (type === "day") key = formatDateVN(item.time);
+
+      if (type === "week") {
+        const firstDay = new Date(date);
+        firstDay.setDate(date.getDate() - date.getDay() + 1);
+        key = formatDateVN(firstDay.toISOString());
+      }
+
+      if (type === "month") {
+        key = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      }
+
+      map.set(key, (map.get(key) || 0) + item.revenue);
+    });
+
+    return Array.from(map.entries()).map(([time, revenue]) => ({
+      time,
+      revenue,
+    }));
+  };
+
+  /* ================= FETCH PRODUCTS ================= */
   const fetchProducts = async () => {
     try {
-      const res = await api.get("/products?limit=1000");
-      const list =
-        res.data?.data?.items?.map((p: any) => ({
-          label: p.name,
-          value: p._id,
-        })) || [];
+      const res = await api.get("/products");
+
+      // 🔥 FIX: đảm bảo luôn là ARRAY
+      const list = Array.isArray(res.data?.data?.results)
+        ? res.data.data.results
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+
       setProducts(list);
     } catch {
       message.error("Không tải được danh sách sản phẩm");
     }
   };
 
-  //load analytics
+  /* ================= FETCH ANALYTICS ================= */
   const fetchAnalytics = async () => {
     try {
-      const params: any = {};
-      if (filters.startDate) params.startDate = filters.startDate;
-      if (filters.endDate) params.endDate = filters.endDate;
-      if (filters.productId) params.productId = filters.productId;
+      const params: any = {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      };
+
+      if (selectedProduct) params.productId = selectedProduct;
 
       const revenueRes = await api.get("/analytics/revenue", { params });
-      const rev = revenueRes?.data?.data || {};
+      const rev = revenueRes.data?.data || {};
       setTotalRevenue(rev.totalRevenue || 0);
       setTotalOrders(rev.totalOrders || 0);
 
-      const productRes = await api.get(
-        "/analytics/revenue-by-product",
-        { params }
-      );
+      const productRes = await api.get("/analytics/revenue-by-product", {
+        params,
+      });
       const productData = productRes.data?.data || [];
       setProductRevenue(productData);
-
-      if (productData.length > 0) {
-        setBestProduct(productData[0].productName || "Không có");
-      }
+      setBestProduct(productData[0]?.productName || "Không có");
 
       const dailyRes = await api.get("/analytics/revenue-daily", { params });
-      const dailyData = dailyRes.data?.data || [];
-
-      setDailyRevenue(
-        dailyData.map((item: any) => ({
-          date: item._id,
+      const dailyData =
+        dailyRes.data?.data?.map((item: any) => ({
+          time: item._id,
           revenue: item.totalRevenue,
-        }))
-      );
+        })) || [];
+
+      setRawRevenue(dailyData);
+      setDailyRevenue(groupRevenue(dailyData, filters.type));
     } catch {
       message.error("Không tải được dữ liệu thống kê");
     }
@@ -87,63 +137,102 @@ const Analytics = () => {
     fetchAnalytics();
   }, []);
 
+  useEffect(() => {
+    setDailyRevenue(groupRevenue(rawRevenue, filters.type));
+  }, [filters.type, rawRevenue]);
 
-  //doanh thu theo ngày
-  const dailyChartConfig = {
-    data: dailyRevenue,
-    xField: "date",
-    yField: "revenue",
-    height: 300,
-    columnWidthRatio: 0.5,
-    color: "#1677ff",
-    label: {
-      position: "top",
-      formatter: (v: any) => `${v.revenue.toLocaleString()}₫`,
-    },
-    yAxis: {
-      label: {
-        formatter: (v: any) => `${Number(v) / 1000}k`,
-      },
-    },
-    tooltip: {
-      formatter: (v: any) => ({
-        name: "Doanh thu",
-        value: `${v.revenue.toLocaleString()}₫`,
-      }),
-    },
-  };
+  /* ================= AREA CHART ================= */
+  const areaConfig = useMemo(
+    () => ({
+      data: dailyRevenue,
+      xField: "time",
+      yField: "revenue",
+      height: 320,
+      smooth: true,
 
- //doanh thu theo sản phẩm
-  const productChartConfig = {
-    data: productRevenue,
-    xField: "productName",
-    yField: "totalRevenue",
-    height: 320,
-    columnWidthRatio: 0.45,
-    color: "#52c41a",
-    label: {
-      position: "top",
-      formatter: (v: any) => `${v.totalRevenue.toLocaleString()}₫`,
-    },
-    yAxis: {
-      label: {
-        formatter: (v: any) => `${Number(v) / 1000}k`,
+      xAxis: {
+        label: {
+          autoRotate: false,
+          formatter: formatDateVN,
+        },
       },
+
+      yAxis: {
+        min: 0,
+        max: 10000000,
+        tickInterval: 5000000,
+        label: {
+          formatter: (v: any) => formatMoney(Number(v)),
+        },
+      },
+
+      tooltip: {
+        formatter: (v: any) => ({
+          name: "Doanh thu",
+          value: formatMoney(v.revenue),
+        }),
+      },
+
+      areaStyle: {
+        fillOpacity: 0.7,
+      },
+
+      line: {
+        color: "#1677ff",
+        size: 3,
+      },
+
+      point: {
+        size: 5,
+        shape: "circle",
+        style: {
+          fill: "#1677ff",
+          stroke: "#fff",
+          lineWidth: 2,
+        },
+      },
+    }),
+    [dailyRevenue]
+  );
+
+
+  /* ================= PRODUCT CHART ================= */
+const productChartConfig = {
+  data: productRevenue,
+  xField: "productName",
+  yField: "totalRevenue",
+  height: 320,
+  columnWidthRatio: 0.5,
+
+  label: false, // 👈 BỎ SỐ TRÊN CỘT
+
+  yAxis: {
+    label: {
+      formatter: (v: any) => formatMoney(Number(v)),
     },
-    tooltip: {
-      formatter: (v: any) => ({
-        name: "Doanh thu",
-        value: `${v.totalRevenue.toLocaleString()}₫`,
-      }),
-    },
-  };
+  },
+
+  tooltip: {
+    formatter: (datum: any) => ({
+      name: "Doanh thu",
+      value: formatMoney(datum.totalRevenue),
+    }),
+  },
+};
+
+
+  const statCard = (color: string) => ({
+    borderLeft: `4px solid ${color}`,
+    borderRadius: 8,
+  });
 
   return (
     <div style={{ padding: 20 }}>
       <Title level={3}>📊 Thống kê doanh thu</Title>
-      {/* <Card style={{ marginBottom: 20 }}>
+
+        <Card style={{ marginBottom: 20 }}>
         <Row gutter={16}>
-          <Col span={8}>
+          <Col span={6}>
             <Text strong>Khoảng ngày</Text>
             <RangePicker
               style={{ width: "100%", marginTop: 5 }}
@@ -160,8 +249,23 @@ const Analytics = () => {
               }
             />
           </Col>
+          <Col span={5}>
+            <Text type="secondary">Thống kê theo</Text>
+            <Select
+              value={filters.type}
+              style={{ width: "100%", marginTop: 5 }}
+              options={[
+                { label: "Theo ngày", value: "day" },
+                { label: "Theo tuần", value: "week" },
+                { label: "Theo tháng", value: "month" },
+              ]}
+              onChange={(value) =>
+                setFilters({ ...filters, type: value })
+              }
+            />
+          </Col>
 
-          <Col span={8}>
+          <Col span={7}>
             <Text strong>Sản phẩm</Text>
             <Select
               style={{ width: "100%", marginTop: 5 }}
@@ -174,56 +278,80 @@ const Analytics = () => {
             />
           </Col>
 
-          <Col span={8} style={{ display: "flex", alignItems: "flex-end" }}>
+          <Col span={4} style={{ display: "flex", alignItems: "flex-end" }}>
             <Button type="primary" block onClick={fetchAnalytics}>
               Áp dụng bộ lọc
             </Button>
           </Col>
         </Row>
-      </Card> */}
-      <Row gutter={16} style={{ marginBottom: 20 }}>
-        <Col span={6}>
-          <Card>
-            <Text>Tổng doanh thu</Text>
-            <Title level={3} style={{ color: "#1677ff" }}>
-              {totalRevenue.toLocaleString()}₫
-            </Title>
-          </Card>
-        </Col>
-
-        <Col span={6}>
-          <Card>
-            <Text>Tổng đơn hàng</Text>
-            <Title level={3} style={{ color: "#52c41a" }}>
-              {totalOrders}
-            </Title>
-          </Card>
-        </Col>
-
-        <Col span={6}>
-          <Card>
-            <Text>Sản phẩm bán chạy</Text>
-            <Title level={4}>{bestProduct}</Title>
-          </Card>
-        </Col>
-
-        <Col span={6}>
-          <Card>
-            <Text>Số sách bán ra</Text>
-            <Title level={3} style={{ color: "#faad14" }}>
-              {productRevenue.reduce(
-                (sum, p: any) => sum + (p.totalQuantitySold || 0),
-                0
-              )}{" "}
-              cuốn
-            </Title>
-          </Card>
-        </Col>
+      </Card>
+<Row gutter={16} style={{ marginBottom: 20 }}>
+  <Col span={6}>
+    <Card style={statCard("#1677ff")}>
+      <Row justify="space-between" align="middle">
+        <div>
+          <Text type="secondary">Tổng doanh thu</Text>
+          <Title level={3} style={{ color: "#1677ff", margin: 0 }}>
+            {formatMoney(totalRevenue)}
+          </Title>
+        </div>
+        <DollarOutlined style={{ fontSize: 32, color: "#1677ff" }} />
       </Row>
+    </Card>
+  </Col>
 
+  <Col span={6}>
+    <Card style={statCard("#52c41a")}>
+      <Row justify="space-between" align="middle">
+        <div>
+          <Text type="secondary">Tổng đơn hàng</Text>
+          <Title level={3} style={{ color: "#52c41a", margin: 0 }}>
+            {totalOrders}
+          </Title>
+        </div>
+        <ShoppingCartOutlined style={{ fontSize: 32, color: "#52c41a" }} />
+      </Row>
+    </Card>
+  </Col>
+
+  <Col span={6}>
+    <Card style={statCard("#faad14")}>
+      <Row justify="space-between" align="middle">
+        <div>
+          <Text type="secondary">Sản phẩm bán chạy</Text>
+          <Title level={4} style={{ margin: 0 }}>
+            {bestProduct}
+          </Title>
+        </div>
+        <FireOutlined style={{ fontSize: 32, color: "#faad14" }} />
+      </Row>
+    </Card>
+  </Col>
+
+  <Col span={6}>
+    <Card style={statCard("#722ed1")}>
+      <Row justify="space-between" align="middle">
+        <div>
+          <Text type="secondary">Số sách bán ra</Text>
+          <Title level={3} style={{ color: "#722ed1", margin: 0 }}>
+            {productRevenue.reduce(
+              (s, p: any) => s + (p.totalQuantitySold || 0),
+              0
+            )}{" "}
+            cuốn
+          </Title>
+        </div>
+        <BookOutlined style={{ fontSize: 32, color: "#722ed1" }} />
+      </Row>
+    </Card>
+  </Col>
+</Row>
+
+
+      {/* CHARTS */}
       <Card style={{ marginBottom: 20 }}>
-        <Title level={5}>📅 Doanh thu theo ngày</Title>
-        <Column {...dailyChartConfig} />
+        <Title level={5}>📈 Doanh thu theo thời gian</Title>
+        <Area {...areaConfig} />
       </Card>
 
       <Card>
