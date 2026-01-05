@@ -21,7 +21,7 @@ import api from "../../config/axios.customize";
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
-/* ================= FORMAT ================= */
+//format
 const formatMoney = (value: number) =>
   `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 
@@ -31,7 +31,6 @@ const formatDateVN = (value: string) => {
 };
 
 const Analytics = () => {
-  /* ================= FILTER ================= */
   const [filters, setFilters] = useState({
     startDate: null as string | null,
     endDate: null as string | null,
@@ -41,7 +40,6 @@ const Analytics = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
-  /* ================= DATA ================= */
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [bestProduct, setBestProduct] = useState("Không có");
@@ -49,7 +47,6 @@ const Analytics = () => {
   const [dailyRevenue, setDailyRevenue] = useState<any[]>([]);
   const [productRevenue, setProductRevenue] = useState<any[]>([]);
 
-  /* ================= GROUP DATA ================= */
   const groupRevenue = (data: any[], type: string) => {
     const map = new Map<string, number>();
 
@@ -77,13 +74,10 @@ const Analytics = () => {
       revenue,
     }));
   };
-
-  /* ================= FETCH PRODUCTS ================= */
   const fetchProducts = async () => {
     try {
       const res = await api.get("/products");
 
-      // 🔥 FIX: đảm bảo luôn là ARRAY
       const list = Array.isArray(res.data?.data?.results)
         ? res.data.data.results
         : Array.isArray(res.data?.data)
@@ -96,7 +90,6 @@ const Analytics = () => {
     }
   };
 
-  /* ================= FETCH ANALYTICS ================= */
   const fetchAnalytics = async () => {
     try {
       const params: any = {
@@ -141,7 +134,6 @@ const Analytics = () => {
     setDailyRevenue(groupRevenue(rawRevenue, filters.type));
   }, [filters.type, rawRevenue]);
 
-  /* ================= AREA CHART ================= */
   const areaConfig = useMemo(
     () => ({
       data: dailyRevenue,
@@ -196,7 +188,6 @@ const Analytics = () => {
   );
 
 
-  /* ================= PRODUCT CHART ================= */
 const productChartConfig = {
   data: productRevenue,
   xField: "productName",
@@ -204,7 +195,7 @@ const productChartConfig = {
   height: 320,
   columnWidthRatio: 0.5,
 
-  label: false, // 👈 BỎ SỐ TRÊN CỘT
+  label: false, 
 
   yAxis: {
     label: {
@@ -300,52 +291,52 @@ const productChartConfig = {
     </Card>
   </Col>
 
-  <Col span={6}>
-    <Card style={statCard("#52c41a")}>
-      <Row justify="space-between" align="middle">
-        <div>
-          <Text type="secondary">Tổng đơn hàng</Text>
-          <Title level={3} style={{ color: "#52c41a", margin: 0 }}>
-            {totalOrders}
-          </Title>
-        </div>
-        <ShoppingCartOutlined style={{ fontSize: 32, color: "#52c41a" }} />
-      </Row>
-    </Card>
-  </Col>
+        <Col span={6}>
+          <Card style={statCard("#52c41a")}>
+            <Row justify="space-between" align="middle">
+              <div>
+                <Text type="secondary">Tổng đơn hàng</Text>
+                <Title level={3} style={{ color: "#52c41a", margin: 0 }}>
+                  {totalOrders}
+                </Title>
+              </div>
+              <ShoppingCartOutlined style={{ fontSize: 32, color: "#52c41a" }} />
+            </Row>
+          </Card>
+        </Col>
 
-  <Col span={6}>
-    <Card style={statCard("#faad14")}>
-      <Row justify="space-between" align="middle">
-        <div>
-          <Text type="secondary">Sản phẩm bán chạy</Text>
-          <Title level={4} style={{ margin: 0 }}>
-            {bestProduct}
-          </Title>
-        </div>
-        <FireOutlined style={{ fontSize: 32, color: "#faad14" }} />
-      </Row>
-    </Card>
-  </Col>
+        <Col span={6}>
+          <Card style={statCard("#faad14")}>
+            <Row justify="space-between" align="middle">
+              <div>
+                <Text type="secondary">Sản phẩm bán chạy</Text>
+                <Title level={4} style={{ margin: 0 }}>
+                  {bestProduct}
+                </Title>
+              </div>
+              <FireOutlined style={{ fontSize: 32, color: "#faad14" }} />
+            </Row>
+          </Card>
+        </Col>
 
-  <Col span={6}>
-    <Card style={statCard("#722ed1")}>
-      <Row justify="space-between" align="middle">
-        <div>
-          <Text type="secondary">Số sách bán ra</Text>
-          <Title level={3} style={{ color: "#722ed1", margin: 0 }}>
-            {productRevenue.reduce(
-              (s, p: any) => s + (p.totalQuantitySold || 0),
-              0
-            )}{" "}
+        <Col span={6}>
+          <Card style={statCard("#722ed1")}>
+            <Row justify="space-between" align="middle">
+              <div>
+                <Text type="secondary">Số sách bán ra</Text>
+                <Title level={3} style={{ color: "#722ed1", margin: 0 }}>
+                  {productRevenue.reduce(
+                    (s, p: any) => s + (p.totalQuantitySold || 0),
+                    0
+                  )}{" "}
             cuốn
-          </Title>
-        </div>
-        <BookOutlined style={{ fontSize: 32, color: "#722ed1" }} />
+                </Title>
+              </div>
+              <BookOutlined style={{ fontSize: 32, color: "#722ed1" }} />
+            </Row>
+          </Card>
+        </Col>
       </Row>
-    </Card>
-  </Col>
-</Row>
 
 
       {/* CHARTS */}
