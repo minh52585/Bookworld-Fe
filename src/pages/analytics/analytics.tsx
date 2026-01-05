@@ -15,7 +15,7 @@ import {
   FireOutlined,
   BookOutlined,
 } from "@ant-design/icons";
-import { Area, Column } from "@ant-design/plots";
+import { Column } from "@ant-design/plots";
 import api from "../../config/axios.customize";
 
 const { RangePicker } = DatePicker;
@@ -76,19 +76,30 @@ const Analytics = () => {
   };
   const fetchProducts = async () => {
     try {
-      const res = await api.get("/products");
+      // Request a large limit so the dropdown contains as many products as possible
+      const res = await api.get("/products", { params: { page: 1, limit: 1000 } });
 
-      const list = Array.isArray(res.data?.data?.results)
+      // Support different API shapes: data.data.items | data.data.results | data.data
+      const list = Array.isArray(res.data?.data?.items)
+        ? res.data.data.items
+        : Array.isArray(res.data?.data?.results)
         ? res.data.data.results
         : Array.isArray(res.data?.data)
         ? res.data.data
         : [];
 
-      setProducts(list);
+      // Map products into Select options { label, value } so AntD Select can display them
+      const options = list.map((p: any) => ({
+        label: p.name || p.title || p.productName || p._id || "",
+        value: p._id || p.id || "",
+      }));
+
+      setProducts(options);
     } catch {
       message.error("Không tải được danh sách sản phẩm");
     }
   };
+
 
   const fetchAnalytics = async () => {
     try {
@@ -134,13 +145,13 @@ const Analytics = () => {
     setDailyRevenue(groupRevenue(rawRevenue, filters.type));
   }, [filters.type, rawRevenue]);
 
-  const areaConfig = useMemo(
+  const timeColumnConfig = useMemo(
     () => ({
       data: dailyRevenue,
       xField: "time",
       yField: "revenue",
       height: 320,
-      smooth: true,
+      columnWidthRatio: 0.6,
 
       xAxis: {
         label: {
@@ -151,8 +162,6 @@ const Analytics = () => {
 
       yAxis: {
         min: 0,
-        max: 10000000,
-        tickInterval: 5000000,
         label: {
           formatter: (v: any) => formatMoney(Number(v)),
         },
@@ -165,24 +174,8 @@ const Analytics = () => {
         }),
       },
 
-      areaStyle: {
-        fillOpacity: 0.7,
-      },
-
-      line: {
-        color: "#1677ff",
-        size: 3,
-      },
-
-      point: {
-        size: 5,
-        shape: "circle",
-        style: {
-          fill: "#1677ff",
-          stroke: "#fff",
-          lineWidth: 2,
-        },
-      },
+      // No labels on bars by default; enable if desired
+      label: false,
     }),
     [dailyRevenue]
   );
@@ -262,10 +255,17 @@ const productChartConfig = {
               style={{ width: "100%", marginTop: 5 }}
               placeholder="Tất cả sản phẩm"
               allowClear
-              options={products}
-              onChange={(value) =>
-                setFilters({ ...filters, productId: value })
+              showSearch
+              optionFilterProp="label"
+              // default filterOption is fine but make it explicit
+              filterOption={(input, option) =>
+                (option?.label as string).toLowerCase().includes(input.toLowerCase())
               }
+              options={products}
+              value={selectedProduct || undefined}
+              notFoundContent="Không có sản phẩm"
+              // Set selected product id into state used by fetchAnalytics
+              onChange={(value) => setSelectedProduct((value as string) || null)}
             />
           </Col>
 
@@ -342,7 +342,7 @@ const productChartConfig = {
       {/* CHARTS */}
       <Card style={{ marginBottom: 20 }}>
         <Title level={5}>📈 Doanh thu theo thời gian</Title>
-        <Area {...areaConfig} />
+        <Column {...timeColumnConfig} />
       </Card>
 
       <Card>
