@@ -354,4 +354,4 @@ const productChartConfig = {
 };
 
 export default Analytics;
-g
+
