@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Popconfirm } from "antd";
-import { Modal, Input } from "antd";
+import { Modal, Input, Image } from "antd";
 
 interface Order {
   _id: string;
@@ -19,6 +19,7 @@ interface Order {
   note: string;
   createdAt: string;
   updatedAt: string;
+  images_return?: string[];
 }
 
 const OrdersAdmin = () => {
@@ -28,6 +29,9 @@ const OrdersAdmin = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelNote, setCancelNote] = useState("");
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [selectedReturnOrder, setSelectedReturnOrder] = useState<Order | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchOrders = async () => {
@@ -86,6 +90,7 @@ const OrdersAdmin = () => {
     fetchOrders();
   }, []);
 
+
   const openCancelModal = (orderId: string) => {
   setCancelOrderId(orderId);
   setCancelNote("");
@@ -129,9 +134,14 @@ const OrdersAdmin = () => {
   }
 };
 
+  const openReturnRequestModal = (order: Order) => {
+  setSelectedReturnOrder(order);
+  setReturnModalOpen(true);
+};
 
 
-  const approveReturn = async (orderId: string) => {
+
+  const approveReturnRequest = async (orderId: string) => {
   const token = localStorage.getItem("admin_token");
   if (!token) {
     msgApi.error("Chưa đăng nhập admin");
@@ -139,9 +149,9 @@ const OrdersAdmin = () => {
   }
 
   try {
-    setLoading(true);
+    setModalLoading(true);
 
-    await axios.post(
+    await axios.put(
       `http://localhost:5004/api/orders/approveReturnOrder/${orderId}`,
       {},
       {
@@ -150,13 +160,36 @@ const OrdersAdmin = () => {
     );
 
     msgApi.success("Đã duyệt yêu cầu Trả hàng / Hoàn tiền");
+    setReturnModalOpen(false);
+    setSelectedReturnOrder(null);
     fetchOrders(); // reload list
   } catch (error: any) {
     msgApi.error(
-      error.response?.data?.message || "Duyệt trả hàng thất bại"
+      error.response?.data?.message || "Duyệt trả hàng hoàn tiền thất bại"
     );
   } finally {
-    setLoading(false);
+    setModalLoading(false);
+  }
+};
+
+const rejectReturnRequest = async (orderId: string) => {
+  if (!selectedReturnOrder) return;
+
+  const token = localStorage.getItem("admin_token");
+  try {
+    setModalLoading(true);
+    await axios.put(
+      `http://localhost:5004/api/orders/rejectReturnOrder/${orderId}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    msgApi.success("Đã từ chối yêu cầu Trả hàng / Hoàn tiền. Đơn hàng sẽ tự động trở về trạng thái cũ");
+    setSelectedReturnOrder(null);
+    fetchOrders();
+  } catch (err: any) {
+    msgApi.error(err.response?.data?.message || "Từ chối yêu cầu thất bại");
+  } finally {
+    setModalLoading(false);
   }
 };
 
@@ -242,17 +275,13 @@ const OrdersAdmin = () => {
     )}
 
       {record.status === "Đang yêu cầu Trả hàng/Hoàn tiền" && (
-        <Popconfirm
-          title="Xác nhận duyệt trả hàng?"
-          description="Hệ thống sẽ hoàn tiền vào ví và hoàn kho"
-          okText="Xác nhận"
-          cancelText="Hủy"
-          onConfirm={() => approveReturn(record._id)}
-        >
-          <Button size="small" danger>
-            Xác nhận yêu cầu
+        
+          <Button size="small" type="primary" 
+          onClick={() => openReturnRequestModal(record)}
+          >
+            Xem yêu cầu
           </Button>
-        </Popconfirm>
+
       )}
     </div>
   ),
@@ -304,6 +333,75 @@ const OrdersAdmin = () => {
           />
         </Modal>
 
+      {selectedReturnOrder && (
+       <Modal
+          open={returnModalOpen}
+          title="Yêu cầu Trả hàng / Hoàn tiền"
+          onCancel={() => setReturnModalOpen(false)}
+          footer={[
+            <Button
+              key="reject"
+              danger
+              onClick={() => {
+                if (selectedReturnOrder) {
+                  rejectReturnRequest(selectedReturnOrder._id);
+                }
+              }}
+              loading={modalLoading}
+            >
+              Từ chối
+            </Button>,
+            <Button
+              key="approve"
+              type="primary"
+              loading={modalLoading}
+              onClick={() => {
+                if (selectedReturnOrder) {
+                  approveReturnRequest(selectedReturnOrder._id);
+                }
+              }}
+            >
+              Xác nhận
+            </Button>,
+          ]}
+          width={600}
+        >
+          {selectedReturnOrder ? (
+            <>
+              <p>
+                <strong>Lý do:</strong>
+              </p>
+              <p style={{ whiteSpace: "pre-wrap" }}>
+                {selectedReturnOrder.note}
+              </p>
+
+              {selectedReturnOrder.images_return &&
+                selectedReturnOrder.images_return.length > 0 && (
+                  <>
+                    <p style={{ marginTop: 16 }}>
+                      <strong>Ảnh đính kèm:</strong>
+                    </p>
+
+                    <Image.PreviewGroup>
+                      {selectedReturnOrder.images_return.map(
+                        (img: string, idx: number) => (
+                          <Image
+                            key={idx}
+                            src={img}
+                            width={100}
+                            style={{ marginRight: 8, borderRadius: 6 }}
+                          />
+                        )
+                      )}
+                    </Image.PreviewGroup>
+                  </>
+                )}
+            </>
+          ) : (
+            <p>Không tìm thấy thông tin yêu cầu</p>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

@@ -25,8 +25,8 @@ import EditVariant from '@/pages/variants/editVariant'
 import OrderDetails from '@/pages/orders/orderDetails'
 import AdminLogin from "@/pages/adminLogin/adminLogin";
 import AdminProtectedRoute from "./adminProtectedRoute";
+import WalletTransaction from '@/pages/wallets/walletTransaction'
 import Wallets from '@/pages/wallets/wallets'
-import WalletTransactions from '@/pages/wallets/walletTransactions'
 import WalletManagement from '@/pages/wallets/walletManagement'
 
 const Routers = () => {
@@ -57,9 +57,9 @@ const Routers = () => {
           <Route path='/coupons/add' element={<AddCoupon />} />
           <Route path='/coupons/edit/:id' element={<EditCoupon />} />
           <Route path='/reviews' element={<Reviews />} />
+          <Route path='/walletTransaction' element={<WalletTransaction />} />
           <Route path='/wallets' element={<Wallets />} />
-          <Route path='/wallets/management' element={<WalletManagement />} />
-          <Route path='/wallets/:walletId/transactions' element={<WalletTransactions />} />
+          {/* <Route path='/wallets/:walletId/transactions' element={<WalletTransactions />} /> */}
         </Route>
       </Route>
       <Route path='/register' element={<Register />} />
