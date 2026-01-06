@@ -13,7 +13,7 @@ const ProductsUpdate = () => {
 
   const [cats, setCats] = useState<any[]>([]);
   const [loadingCats, setLoadingCats] = useState(false);
-  const [image, setImage] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -47,7 +47,10 @@ const ProductsUpdate = () => {
           category: product.category?._id || product.category,
         });
 
-        if (product.images && product.images.length > 0) setImage(product.images[0]);
+        if (product.images && product.images.length > 0) {
+          setImages(product.images);
+          form.setFieldsValue({ images: product.images });
+        }
       } catch (err) {
         console.error(err);
         messageApi.error('Không lấy được thông tin sản phẩm');
@@ -70,13 +73,23 @@ const ProductsUpdate = () => {
         formData
       );
       const url = data.secure_url || data.url;
-      setImage(url);
-      form.setFieldsValue({ images: [url] });
+      
+      // Thêm ảnh mới vào danh sách thay vì thay thế
+      const newImages = [...images, url];
+      setImages(newImages);
+      form.setFieldsValue({ images: newImages });
     } catch (err) {
       messageApi.error('Upload ảnh thất bại');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Xóa ảnh
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    form.setFieldsValue({ images: newImages });
   };
 
   const customUpload = async ({ file, onSuccess, onError }: any) => {
@@ -100,7 +113,7 @@ const ProductsUpdate = () => {
         namxuatban: Number(values.namxuatban || 0),
         sotrang: Number(values.sotrang || 0),
         status: values.status ?? true,
-        images: values.images || (image ? [image] : []),
+        images: values.images || images,
       };
 
       // --- CHỈ THÊM TOKEN VÀO ĐOẠN NÀY ---
@@ -175,13 +188,13 @@ const ProductsUpdate = () => {
           </Col>
         </Row>
 
-        <Row gutter={16}>
+        {/* <Row gutter={16}>
           <Col span={8}>
             <Form.Item label="Trạng thái" name="status" valuePropName="checked">
               <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" />
             </Form.Item>
           </Col>
-        </Row>
+        </Row> */}
 
         <Row gutter={16}>
           <Col span={8}>
@@ -201,39 +214,78 @@ const ProductsUpdate = () => {
           </Col>
         </Row>
 
-        <div style={{ display: 'flex', gap: 20 }}>
-          <Form.Item label="Ảnh">
+        <Form.Item label="Ảnh sản phẩm">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-start' }}>
+            {/* Hiển thị danh sách ảnh đã upload */}
+            {images.map((img, index) => (
+              <div key={index} style={{ position: 'relative', width: 100, height: 100 }}>
+                <img 
+                  src={img} 
+                  alt={`Product ${index + 1}`} 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover', 
+                    borderRadius: 8,
+                    border: '1px solid #d9d9d9'
+                  }} 
+                />
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  onClick={() => removeImage(index)}
+                  style={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#ff4d4f',
+                    color: 'white',
+                    fontSize: 12
+                  }}
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+
+            {/* Nút thêm ảnh - luôn hiển thị */}
             <Upload
               listType="picture-card"
               showUploadList={false}
               beforeUpload={file => file.type.startsWith('image/') || Upload.LIST_IGNORE}
               customRequest={customUpload}
+              style={{ width: 100, height: 100 }}
             >
               {loading ? (
                 <LoadingOutlined />
-              ) : image ? (
-                <img src={image} alt="Uploaded" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
               ) : (
                 <div>
                   <PlusOutlined />
-                  <div>Tải ảnh</div>
+                  <div style={{ marginTop: 8, fontSize: 12 }}>Thêm ảnh</div>
                 </div>
               )}
             </Upload>
-            <Form.Item name="images" style={{ display: 'none' }}>
-              <Input type="hidden" />
-            </Form.Item>
+          </div>
+          
+          <Form.Item name="images" style={{ display: 'none' }}>
+            <Input type="hidden" />
           </Form.Item>
+        </Form.Item>
 
-          <Form.Item
-            label="Mô tả"
-            name="description"
-            style={{ flex: 1, marginBottom: 0 }}
-            rules={[{ required: true, message: 'Nhập mô tả' }, { min: 10, message: 'Ít nhất 10 ký tự' }]}
-          >
-            <TextArea rows={4} placeholder="Mô tả hiển thị" />
-          </Form.Item>
-        </div>
+        <Form.Item
+          label="Mô tả"
+          name="description"
+          rules={[{ required: true, message: 'Nhập mô tả' }, { min: 10, message: 'Ít nhất 10 ký tự' }]}
+        >
+          <TextArea rows={4} placeholder="Mô tả hiển thị" />
+        </Form.Item>
 
         <Form.Item>
           <Button type="primary" htmlType="submit" block loading={loading}>

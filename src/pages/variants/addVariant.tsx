@@ -9,6 +9,7 @@ import {
   Row,
   Col,
   Spin,
+  Input,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "@/config/axios.customize";
@@ -159,7 +160,6 @@ const AddVariant = () => {
               <p><b>Số trang:</b> {selectedProduct.sotrang}</p>
               <p><b>Kích thước:</b> {selectedProduct.size}</p>
               <p><b>Khối lượng:</b> {selectedProduct.weight} g</p>
-              <p><b>SKU:</b> {selectedProduct.sku}</p>
               <p><b>Mô tả:</b> {selectedProduct.description || "—"}</p>
 
               {/* Hiển thị ảnh sản phẩm */}
@@ -221,6 +221,8 @@ const AddVariant = () => {
                   ]}
                 />
               </Form.Item>
+             
+
 
               <Form.Item
                 label="Giá"
