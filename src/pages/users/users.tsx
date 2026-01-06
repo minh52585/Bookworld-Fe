@@ -108,17 +108,23 @@ const Users = () => {
       render: (date: string) =>
         new Date(date).toLocaleDateString("vi-VN"),
     },
-    {
+   {
       title: "Trạng thái",
       dataIndex: "status",
       width: 140,
-     render: (status: string) => 
-        status === "active" ? (
-        <Tag color="blue">Đã xác thực</Tag>
-      ) : (
-        <Tag color="red">Chưa xác thực</Tag>
-      ),
-    },
+      render: (status: string, record: any) => {
+        // Loại admin ra
+        if (record.role === "admin") {
+          return null;
+        }
+
+        return String(status).trim().toLowerCase() === "active" ? (
+          <Tag color="blue">Đã xác thực</Tag>
+        ) : (
+          <Tag color="red">Chưa xác thực</Tag>
+        );
+      },
+    }
   ];
 
   return (

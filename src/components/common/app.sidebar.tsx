@@ -23,7 +23,7 @@ const navigate = useNavigate()
   const location = useLocation()
 
   return (
-    <Sider trigger={null} collapsible collapsed={!isOpenDrawer}>
+    <Sider trigger={null} collapsible collapsed={!isOpenDrawer} style={{ position: 'relative' }}>
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -44,19 +44,27 @@ const navigate = useNavigate()
             selectedKeys={[location.pathname]}
             defaultSelectedKeys={['/']}
             items={itemsRoute}
+            style={{ marginBottom: 80 }}
           />
         </section>
-        <div style={{ padding: 16 }}>
-        <Button
-          danger
-          type="primary"
-          icon={<LogoutOutlined />}
-          block
-          onClick={handleLogout}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            left: 16,
+            right: 16,
+          }}
         >
-          Đăng xuất
-        </Button>
-      </div>
+          <Button
+            danger
+            type="primary"
+            icon={<LogoutOutlined />}
+            block
+            onClick={handleLogout}
+          >
+            Đăng xuất
+          </Button>
+        </div>
       </div>
     </Sider>
   )

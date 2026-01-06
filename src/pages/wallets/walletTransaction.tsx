@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Tag, Alert, App, Button, Modal, Upload, Form, Image} from 'antd';
+import { Table, Tag, Alert, App, Button, Modal, Upload, Form, Image,Select} from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { transactionAPI } from '@/apis/wallets';
@@ -8,7 +8,13 @@ import { API_BASE_URL } from '@/config/adminAxios';
 import axios from "axios";
 import { showNotification } from "../../utils/notification";
 import dayjs from "dayjs";
-
+const TRANSACTION_TYPES_OPTIONS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Nạp tiền', value: 'Nạp tiền' },
+  { label: 'Rút tiền', value: 'Rút tiền' },
+  { label: 'Thanh toán', value: 'Thanh toán' },
+  { label: 'Hoàn tiền', value: 'Hoàn tiền' },
+];
 
 const Wallets = () => {
   const [form] = Form.useForm();
@@ -20,7 +26,7 @@ const Wallets = () => {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-
+  const [selectedTransactionType, setSelectedTransactionType] =  useState<string>('all');
   // Fetch all transactions
   const fetchTransactions = async () => {
     setLoading(true);
@@ -88,6 +94,14 @@ const Wallets = () => {
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+
+
+  const filteredTransactions = transactions.filter((item) => {
+  if (selectedTransactionType === 'all') return true;
+  return item.type === selectedTransactionType;
+});
+
 
   const handleApproveWithdraw = (transactionId: string) => {
   setSelectedTransaction(transactionId);
@@ -176,11 +190,16 @@ const Wallets = () => {
       title: 'Loại giao dịch',
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => (
-        <Tag color={type === 'Nạp tiền' ? 'green' : 'red'}>
-          {type}
-        </Tag>
-      ),
+      render: (type: string) => {
+        const map: Record<string, string> = {
+          'Nạp tiền': 'green',
+          'Rút tiền': 'red',
+          'Thanh toán': 'blue',
+          'Hoàn tiền': 'orange',
+        };
+
+        return <Tag color={map[type] || 'default'}>{type}</Tag>;
+      },
     },
     {
       title: 'Số tiền',
@@ -276,9 +295,20 @@ const Wallets = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1> Quản lý giao dịch</h1>
-        <Button onClick={fetchTransactions} type="primary" loading={loading}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+          <Select
+            value={selectedTransactionType}
+            placeholder="-- Chọn trạng thái --"
+            allowClear
+            style={{ width: 220 }}
+            onChange={(value) => setSelectedTransactionType(value)}
+            options={TRANSACTION_TYPES_OPTIONS}
+          />
+
+          <Button onClick={fetchTransactions} type="primary" loading={loading}>
             Làm mới
           </Button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
@@ -304,10 +334,13 @@ const Wallets = () => {
           }
         />
       </div>
+        
+      
+
 
       <Table
         columns={columns}
-        dataSource={transactions}
+        dataSource={filteredTransactions}
         loading={loading}
         pagination={{
           pageSize: 10,
