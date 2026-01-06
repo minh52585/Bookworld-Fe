@@ -35,6 +35,7 @@ const Users = () => {
               key: u._id,
               stt: index + 1,
               name: u.name,
+              status: u.status,
               email: u.email,
               role: u.role,
               createdAt: u.createdAt,
@@ -109,9 +110,13 @@ const Users = () => {
     },
     {
       title: "Trạng thái",
+      dataIndex: "status",
       width: 140,
-      render: () => (
-        <Tag color="success">Hoạt động</Tag>
+     render: (status: string) => 
+        status === "active" ? (
+        <Tag color="blue">Đã xác thực</Tag>
+      ) : (
+        <Tag color="red">Chưa xác thực</Tag>
       ),
     },
   ];

@@ -226,7 +226,10 @@ const OrderDetailsAdmin = () => {
               <Tag color={STATUS_CONFIG[order.status]?.color} icon={STATUS_CONFIG[order.status]?.icon}>
                 {order?.status}
               </Tag>
-                {getAvailableStatuses(order.status).length > 0 && (
+                {getAvailableStatuses(order.status).length > 0 && 
+                (order.status_logs?.filter(
+                (log: any) => log.status === "Giao hàng không thành công"
+              ).length || 0) < 2 &&(
                 <Button
                   size="small"
                   icon={<EditOutlined />}
