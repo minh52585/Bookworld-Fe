@@ -4,13 +4,13 @@ import {
   message,
   Table,
   Popconfirm,
-  Switch,
   Space,
   Card,
   Input,
   Select,
   Tag,
   Image,
+  Badge,
 } from 'antd';
 import { Link } from 'react-router-dom';
 import {
@@ -27,7 +27,7 @@ interface ICategory {
   name: string;
 }
 
-interface IProductWithCategory extends IProducts {
+interface IProductWithCategory extends Omit<IProducts, 'category'> {
   stt: number;
   category?: ICategory;
 }
@@ -93,7 +93,7 @@ const ProductsPage = () => {
     {
       title: 'STT',
       width: 60,
-      align: 'center',
+      align: 'center' as const,
       render: (_: any, __: any, index: number) => index + 1,
     },
     {
@@ -121,7 +121,7 @@ const ProductsPage = () => {
       title: 'Năm XB',
       dataIndex: 'namxuatban',
       width: 100,
-      align: 'center',
+      align: 'center' as const,
     },
     {
       title: 'NXB',
@@ -132,13 +132,13 @@ const ProductsPage = () => {
       title: 'Số trang',
       dataIndex: 'sotrang',
       width: 100,
-      align: 'right',
+      align: 'right' as const,
     },
     {
       title: 'Khối lượng (g)',
       dataIndex: 'weight',
       width: 120,
-      align: 'right',
+      align: 'right' as const,
     },
     {
       title: 'Kích thước',
@@ -153,18 +153,30 @@ const ProductsPage = () => {
     {
       title: 'Hình ảnh',
       dataIndex: 'images',
-      width: 100,
-      render: (images: string[]) =>
-        images?.[0] ? (
-          <Image
-            src={images[0]}
-            width={50}
-            height={50}
-            style={{ objectFit: 'cover', borderRadius: 6 }}
-          />
-        ) : (
-          <Tag>Chưa có</Tag>
-        ),
+      width: 120,
+      align: 'center' as const,
+      render: (images: string[]) => {
+        if (!images || images.length === 0) {
+          return <Tag>Chưa có</Tag>;
+        }
+        
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Badge count={images.length} color="#1890ff">
+              <Image
+                src={images[0]}
+                width={50}
+                height={50}
+                style={{ objectFit: 'cover', borderRadius: 6 }}
+                preview={{
+                  src: images[0],
+                }}
+              />
+            </Badge>
+           
+          </div>
+        );
+      },
     },
     // {
     //   title: 'Trạng thái',
@@ -178,7 +190,7 @@ const ProductsPage = () => {
     //         const token = localStorage.getItem('admin_token');
     //         await api.put(
     //           `/products/${record._id}`,
-    //           { status: checked },
+    //           { status: c  hecked },
     //           { headers: { Authorization: `Bearer ${token}` } }
     //         );
     //         message.success('Cập nhật trạng thái thành công');
@@ -204,7 +216,7 @@ const ProductsPage = () => {
               size="small"
               danger
               icon={<DeleteOutlined />}
-              loading={deleteMutation.isLoading}
+              loading={deleteMutation.isPending}
             />
           </Popconfirm>
         </Space>
