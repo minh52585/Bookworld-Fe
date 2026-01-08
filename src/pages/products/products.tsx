@@ -11,6 +11,8 @@ import {
   Tag,
   Image,
   Badge,
+  Switch
+  
 } from 'antd';
 import { Link } from 'react-router-dom';
 import {
@@ -37,7 +39,7 @@ const ProductsPage = () => {
 
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   //lấy danh mục
   const { data: categories = [] } = useQuery<ICategory[]>({
     queryKey: ['categories'],
@@ -58,10 +60,10 @@ const ProductsPage = () => {
         ...item,
         stt: index + 1,
         images: Array.isArray(item.images) ? item.images : [],
-        status: Boolean(item.status),
       }));
     },
   });
+  console.log("PRODUCTS TABLE DATA:", products);
 
   //xóa sp
   const deleteMutation = useMutation({
@@ -114,7 +116,7 @@ const ProductsPage = () => {
         record.category?.name ? (
           <Tag color="blue">{record.category.name}</Tag>
         ) : (
-          <Tag>Chưa phân loại</Tag>
+<Tag>Chưa phân loại</Tag>
         ),
     },
     {
@@ -178,27 +180,39 @@ const ProductsPage = () => {
         );
       },
     },
-    // {
-    //   title: 'Trạng thái',
-    //   dataIndex: 'status',
-    //   width: 110,
-    //   align: 'center',
-    //   render: (status: boolean, record: IProductWithCategory) => (
-    //     <Switch
-    //       checked={status}
-    //       onChange={async (checked) => {
-    //         const token = localStorage.getItem('admin_token');
-    //         await api.put(
-    //           `/products/${record._id}`,
-    //           { status: c  hecked },
-    //           { headers: { Authorization: `Bearer ${token}` } }
-    //         );
-    //         message.success('Cập nhật trạng thái thành công');
-    //         queryClient.invalidateQueries({ queryKey: ['products'] });
-    //       }}
-    //     />
-    //   ),
-    // },
+    { 
+       title: 'Trạng thái', 
+       dataIndex: 'status', 
+       key: 'status', 
+       width: 100, 
+       render: (status: string, record: IProducts) => (
+        <Switch
+          loading={loadingId === record._id}
+          checked={status === "active"}
+          // checkedChildren="Sẵn"
+          // unCheckedChildren="Hết"
+          style={{ minWidth: 50 }}
+          onChange={async (checked) => {
+            setLoadingId(record._id);
+            console.log("STATUS VALUE:", status, typeof status);
+            try {
+              await api.put(`/products/${record._id}`, {
+                status: checked ? "active" : "inactive",
+              });
+
+              message.success("Cập nhật trạng thái thành công!");
+              queryClient.invalidateQueries({ queryKey: ["products"] });
+            } catch (error) {
+              console.error(error);
+              message.error("Cập nhật trạng thái thất bại!");
+            }
+            finally {
+          setLoadingId(null);
+        }
+          }}
+        />
+       )
+     },
     {
       title: 'Hành động',
       width: 130,
@@ -215,7 +229,7 @@ const ProductsPage = () => {
             <Button
               size="small"
               danger
-              icon={<DeleteOutlined />}
+icon={<DeleteOutlined />}
               loading={deleteMutation.isPending}
             />
           </Popconfirm>
