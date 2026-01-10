@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
-  message,
   Table,
   Popconfirm,
   Space,
@@ -11,8 +10,8 @@ import {
   Tag,
   Image,
   Badge,
-  Switch
-  
+  Switch,
+  App
 } from 'antd';
 import { Link } from 'react-router-dom';
 import {
@@ -29,18 +28,23 @@ interface ICategory {
   name: string;
 }
 
-interface IProductWithCategory extends Omit<IProducts, 'category'> {
+interface IProductWithCategory extends Omit<IProducts, 'category' | 'status'> {
   stt: number;
   category?: ICategory;
+  status: boolean;
 }
 
 const ProductsPage = () => {
   const queryClient = useQueryClient();
+  const { message } = App.useApp();
 
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  //lấy danh mục
+
+// ======================
+// Lấy danh mục
+// ======================
   const { data: categories = [] } = useQuery<ICategory[]>({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -49,7 +53,9 @@ const ProductsPage = () => {
     },
   });
 
-  //danh sách sản phẩm
+  // ======================
+  // Lấy danh sách sản phẩm
+  // ======================
   const { data: products = [], isLoading } = useQuery<IProductWithCategory[]>({
     queryKey: ['products'],
     queryFn: async () => {
@@ -65,7 +71,9 @@ const ProductsPage = () => {
   });
   console.log("PRODUCTS TABLE DATA:", products);
 
-  //xóa sp
+  // ======================
+  // Xoá sản phẩm
+  // ======================
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const token = localStorage.getItem('admin_token');
@@ -78,6 +86,10 @@ const ProductsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
+
+  // ======================
+  // Lọc dữ liệu
+  // ======================
   const filteredData = products.filter((item) => {
     const matchName = item.name
       ?.toLowerCase()
@@ -91,6 +103,9 @@ const ProductsPage = () => {
     return matchName && matchCategory;
   });
 
+  // ======================
+  // Columns Table
+  // ======================
   const columns = [
     {
       title: 'STT',
@@ -161,22 +176,16 @@ const ProductsPage = () => {
         if (!images || images.length === 0) {
           return <Tag>Chưa có</Tag>;
         }
-        
+
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Badge count={images.length} color="#1890ff">
-              <Image
-                src={images[0]}
-                width={50}
-                height={50}
-                style={{ objectFit: 'cover', borderRadius: 6 }}
-                preview={{
-                  src: images[0],
-                }}
-              />
-            </Badge>
-           
-          </div>
+          <Badge count={images.length}>
+            <Image
+              src={images[0]}
+              width={50}
+              height={50}
+              style={{ objectFit: 'cover', borderRadius: 6 }}
+            />
+          </Badge>
         );
       },
     },
@@ -185,7 +194,7 @@ const ProductsPage = () => {
        dataIndex: 'status', 
        key: 'status', 
        width: 100, 
-       render: (status: string, record: IProducts) => (
+       render: (status: string, record: IProductWithCategory) => (
         <Switch
           loading={loadingId === record._id}
           checked={status === "active"}
@@ -238,6 +247,9 @@ icon={<DeleteOutlined />}
     },
   ];
 
+  // ======================
+  // Render
+  // ======================
   return (
     <Card
       title="Danh sách sản phẩm"

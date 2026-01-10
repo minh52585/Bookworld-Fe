@@ -8,6 +8,9 @@ import {
   Col,
   Typography,
   message,
+  Modal,
+  Table,
+  Tag,
 } from "antd";
 import {
   DollarOutlined,
@@ -56,6 +59,36 @@ const Analytics = () => {
 
   // Previous period revenue for comparison display
   const [prevRevenue, setPrevRevenue] = useState<number | null>(null);
+
+  // Modal states for order details
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalOrders, setModalOrders] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+
+  // Helper function to get current date range
+  const getCurrentDateRange = () => {
+    const start = filters.startDate ? new Date(filters.startDate) : (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 6);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
+
+    const end = filters.endDate ? new Date(filters.endDate) : (() => {
+      const d = new Date();
+      d.setHours(23, 59, 59, 999);
+      return d;
+    })();
+
+    return { start, end };
+  };
+
+  // Helper function to check if date is in range
+  const isDateInRange = (dateStr: string | Date, start: Date, end: Date) => {
+    const t = new Date(dateStr).getTime();
+    return t >= start.getTime() && t <= end.getTime();
+  };
 
   // previous-period comparison removed
 
@@ -109,7 +142,7 @@ const Analytics = () => {
       }));
 
       setProducts(options);
-    } catch {
+    } catch (error) {
       message.error("Không tải được danh sách sản phẩm");
     }
   };
@@ -127,7 +160,6 @@ const Analytics = () => {
       const revenueRes = await api.get("/analytics/revenue", { params });
       const rev = revenueRes.data?.data || {};
       setTotalRevenue(rev.totalRevenue || 0);
-      setTotalOrders(rev.totalOrders || 0);
 
       // Fetch product revenue filtered (used for the product revenue chart)
       const productRes = await api.get("/analytics/revenue-by-product", {
@@ -159,27 +191,21 @@ const Analytics = () => {
 
       // Fetch orders list to compute "Đã thanh toán" / "Đã hủy" stats
       const ordersRes = await api.get("/orders/admin/list");
-      const allOrders = Array.isArray(ordersRes.data?.data) ? ordersRes.data.data : [];
+      const allOrdersData = Array.isArray(ordersRes.data?.data) ? ordersRes.data.data : [];
+      setAllOrders(allOrdersData);
 
-      const start = filters.startDate ? new Date(filters.startDate) : (() => {
-        const d = new Date();
-        d.setDate(d.getDate() - 6);
-        d.setHours(0, 0, 0, 0);
-        return d;
-      })();
+      const { start, end } = getCurrentDateRange();
+      
+      // Chỉ lọc theo ngày, không lọc theo sản phẩm cho các thẻ thống kê
+      let currentOrders: any[];
+      if (!filters.startDate && !filters.endDate) {
+        currentOrders = allOrdersData;
+      } else {
+        currentOrders = allOrdersData.filter((o: any) => isDateInRange(o.createdAt, start, end));
+      }
 
-      const end = filters.endDate ? new Date(filters.endDate) : (() => {
-        const d = new Date();
-        d.setHours(23, 59, 59, 999);
-        return d;
-      })();
-
-      const inRange = (dateStr: string | Date, s: Date, e: Date) => {
-        const t = new Date(dateStr).getTime();
-        return t >= s.getTime() && t <= e.getTime();
-      };
-
-      const currentOrders = allOrders.filter((o: any) => inRange(o.createdAt, start, end));
+      // Tính totalOrders từ currentOrders
+      setTotalOrders(currentOrders.length);
 
       // Consider an order 'paid' for analytics when it has been delivered successfully
       const currentPaid = currentOrders.filter((o: any) => o.status === "Giao hàng thành công").length;
@@ -192,6 +218,7 @@ const Analytics = () => {
 
       // Fetch previous-period revenue (same length immediately before current range)
       try {
+        const { start, end } = getCurrentDateRange();
         const duration = end.getTime() - start.getTime() + 1;
         const prevEnd = new Date(start.getTime() - 1);
         const prevStart = new Date(start.getTime() - duration + 1);
@@ -213,6 +240,98 @@ const Analytics = () => {
       message.error("Không tải được dữ liệu thống kê");
     }
   };
+
+  // Handle click on stat cards to show order details
+  const handleStatCardClick = (type: 'all' | 'paid' | 'cancelled') => {
+    let currentOrders: any[] = [];
+    let title = "";
+
+    // Lọc theo ngày (nếu có chọn)
+    if (!filters.startDate && !filters.endDate) {
+      currentOrders = allOrders;
+    } else {
+      const { start, end } = getCurrentDateRange();
+      currentOrders = allOrders.filter((o: any) => isDateInRange(o.createdAt, start, end));
+    }
+
+    // Tạo tiêu đề với khoảng ngày (nếu có)
+    const dateRange = (!filters.startDate && !filters.endDate) ? 
+      "" : 
+      ` (${formatDateVN(getCurrentDateRange().start.toISOString())} - ${formatDateVN(getCurrentDateRange().end.toISOString())})`;
+
+    // Lọc theo trạng thái
+    switch (type) {
+      case 'all':
+        title = `Tất cả đơn hàng${dateRange}`;
+        break;
+      case 'paid':
+        currentOrders = currentOrders.filter((o: any) => o.status === "Giao hàng thành công");
+        title = `Đơn hàng đã thanh toán${dateRange}`;
+        break;
+      case 'cancelled':
+        currentOrders = currentOrders.filter((o: any) =>
+          (o.status && String(o.status).toLowerCase().includes("hủy")) || o.payment?.status === "Đã hủy"
+        );
+        title = `Đơn hàng đã hủy${dateRange}`;
+        break;
+    }
+
+    setModalOrders(currentOrders);
+    setModalTitle(title);
+    setIsModalVisible(true);
+  };
+
+  // Table columns for order modal
+  const orderColumns = [
+    {
+      title: 'Mã đơn hàng',
+      dataIndex: '_id',
+      key: '_id',
+      render: (text: string) => `#${text?.slice(-8) || 'N/A'}`,
+    },
+    {
+      title: 'Khách hàng',
+      dataIndex: 'user_id',
+      key: 'user_id',
+      render: (user: any) => {
+        if (!user) return "—";
+        // Nếu backend trả về string (chưa populate)
+        if (typeof user === "string") {
+          return `User #${user.slice(-6)}`;
+        }
+        // Nếu đã populate
+        return user.name || user.email || `User #${user._id?.slice(-6)}` || "—";
+      },
+    },
+    {
+      title: 'Tổng tiền',
+      dataIndex: 'total',
+      key: 'total',
+      render: (amount: number) => formatMoney(amount || 0),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'default';
+        if (status === 'Giao hàng thành công') color = 'green';
+        else if (status?.toLowerCase().includes('hủy')) color = 'red';
+        else if (status === 'Chờ xử lý') color = 'blue';
+        else if (status === 'Đang giao hàng') color = 'orange';
+        else if (status === 'Đang yêu cầu Trả hàng/Hoàn tiền') color = 'orange';
+        else if (status === 'Trả hàng/Hoàn tiền thành công') color = 'green';
+        
+        return <Tag color={color}>{status || 'N/A'}</Tag>;
+      },
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => formatDateVN(date),
+    },
+  ];
 
   useEffect(() => {
     fetchProducts();
@@ -397,7 +516,11 @@ const productChartConfig = {
   </Col>
 
   <Col span={4}>
-    <Card style={statCard("#52c41a")}>
+    <Card 
+      style={{...statCard("#52c41a"), cursor: 'pointer'}} 
+      onClick={() => handleStatCardClick('all')}
+      className="clickable-card"
+    >
       <Row justify="space-between" align="middle">
         <div>
           <Text type="secondary">Tổng đơn hàng</Text>
@@ -411,7 +534,11 @@ const productChartConfig = {
   </Col>
 
   <Col span={4}>
-    <Card style={statCard("#13c2c2")}>
+    <Card 
+      style={{...statCard("#13c2c2"), cursor: 'pointer'}} 
+      onClick={() => handleStatCardClick('paid')}
+      className="clickable-card"
+    >
       <Row justify="space-between" align="middle">
         <div>
           <Text type="secondary">Đã thanh toán</Text>
@@ -425,7 +552,11 @@ const productChartConfig = {
   </Col>
 
   <Col span={4}>
-    <Card style={statCard("#ff4d4f")}>
+    <Card 
+      style={{...statCard("#ff4d4f"), cursor: 'pointer'}} 
+      onClick={() => handleStatCardClick('cancelled')}
+      className="clickable-card"
+    >
       <Row justify="space-between" align="middle">
         <div>
           <Text type="secondary">Đã hủy</Text>
@@ -482,6 +613,38 @@ const productChartConfig = {
         <Title level={5}>📦 Doanh thu theo sản phẩm</Title>
         <Column {...productChartConfig} />
       </Card>
+
+      {/* Order Details Modal */}
+      <Modal
+        title={modalTitle}
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={null}
+        width={1000}
+      >
+        <Table
+          dataSource={modalOrders}
+          columns={orderColumns}
+          rowKey="_id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn hàng`,
+          }}
+        />
+      </Modal>
+
+      <style>{`
+        .clickable-card {
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .clickable-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      `}</style>
     </div>
   );
 };
