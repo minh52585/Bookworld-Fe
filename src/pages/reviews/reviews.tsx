@@ -61,9 +61,7 @@ const Reviews = () => {
         limit: filters.limit,
       };
 
-      if (filters.rating !== undefined) {
-        params.rating = filters.rating;
-      }
+      
 
       const res = await reviewsAPI.getAllReviews(params);
       const data = res.data.data;
@@ -137,26 +135,24 @@ const Reviews = () => {
   };
 
   // Lọc dữ liệu local
-  const filteredReviews = reviews.filter(review => {
-    const matchesSearch = searchText === "" || 
-      review.user.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      review.product.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchText.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || review.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+ const filteredReviews = reviews.filter(review => {
+  const matchesSearch =
+    searchText === "" ||
+    review.user.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    review.product.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    review.comment.toLowerCase().includes(searchText.toLowerCase());
+
+  const matchesStatus =
+    statusFilter === "all" || review.status === statusFilter;
+
+  const matchesRating =
+    filters.rating === undefined || review.rating === filters.rating;
+
+  return matchesSearch && matchesStatus && matchesRating;
+});
 
   // ================= UI =================
-  const renderStatus = (status: string) => {
-    const map: any = {
-      pending: { color: "orange", text: "Chờ duyệt" },
-      approved: { color: "green", text: "Đã duyệt" },
-      rejected: { color: "red", text: "Từ chối" },
-    };
-    return <Tag color={map[status].color}>{map[status].text}</Tag>;
-  };
+  
 
   const columns = [
     {
@@ -267,27 +263,9 @@ const Reviews = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Chờ duyệt"
-              value={stats.pending}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
+        
        
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Điểm trung bình"
-              value={stats.avgRating}
-              precision={1}
-              suffix="⭐"
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
+       
       </Row>
 
       <Card>
