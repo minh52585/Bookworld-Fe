@@ -205,7 +205,7 @@ const ProductsPage = () => {
             setLoadingId(record._id);
             console.log("STATUS VALUE:", status, typeof status);
             try {
-              await api.put(`/products/${record._id}`, {
+              await api.put(`/products/status/${record._id}`, {
                 status: checked ? "active" : "inactive",
               });
 

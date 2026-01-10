@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Popconfirm } from "antd";
-import { Modal, Input, Image } from "antd";
+import { Modal, Input, Image, Radio } from "antd";
 
 interface Order {
   _id: string;
@@ -22,6 +22,24 @@ interface Order {
   images_return?: string[];
 }
 
+const REJECT_REASONS = [
+  "Sản phẩm đã qua sử dụng / không còn nguyên vẹn",
+  "Quá thời hạn cho phép Trả hàng / Hoàn tiền",
+  "Lý do cung cấp không hợp lệ",
+  "Hình ảnh / bằng chứng không đủ rõ ràng",
+  "Sản phẩm không thuộc diện được Trả hàng / Hoàn tiền",
+  "Đơn hàng đã được sử dụng khuyến mãi không hoàn tiền",
+  "Khác",
+];
+
+const CANCEL_REASONS = [
+  "Không liên hệ được với khách hàng",
+  "Sản phẩm hết hàng",
+  "Sai thông tin đơn hàng",
+  "Phát hiện gian lận / đơn hàng bất thường",
+  "Khác",
+];
+
 const OrdersAdmin = () => {
   const [data, setData] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,6 +50,14 @@ const OrdersAdmin = () => {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedReturnOrder, setSelectedReturnOrder] = useState<Order | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [selectedRejectReason, setSelectedRejectReason] = useState<string>("");
+  const [customRejectReason, setCustomRejectReason] = useState(""); 
+  const [selectedCancelReason, setSelectedCancelReason] = useState("");
+  const [customCancelReason, setCustomCancelReason] = useState("");
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchOrders = async () => {
@@ -90,120 +116,120 @@ const OrdersAdmin = () => {
     fetchOrders();
   }, []);
 
-
   const openCancelModal = (orderId: string) => {
-  setCancelOrderId(orderId);
-  setCancelNote("");
-  setCancelModalOpen(true);
-};
+    setCancelOrderId(orderId);
+    setCancelNote("");
+    setCancelModalOpen(true);
+  };
 
-  const confirmCancelOrder = async () => {
-  if (!cancelOrderId) return;
+  const confirmCancelOrder = async (reason: string) => {
+    if (!cancelOrderId) return;
 
-  const token = localStorage.getItem("admin_token");
-  if (!token) {
-    msgApi.error("Chưa đăng nhập admin");
-    return;
-  }
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
 
-  if (!cancelNote.trim()) {
-    msgApi.warning("Vui lòng nhập lý do hủy đơn");
-    return;
-  }
+    try {
+      setLoading(true);
 
-  try {
-    setLoading(true);
+      await axios.put(
+        `http://localhost:5004/api/orders/${cancelOrderId}`,
+        { note: reason },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    await axios.put(
-      `http://localhost:5004/api/orders/${cancelOrderId}`,
-      { note: cancelNote }, // ✅ gửi note cho backend
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      msgApi.success("Đã hủy đơn hàng");
 
-    msgApi.success("Đã hủy đơn hàng");
-    setCancelModalOpen(false);
-    fetchOrders();
-  } catch (error: any) {
-    msgApi.error(
-      error.response?.data?.message || "Hủy đơn hàng thất bại"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      // 🔥 đóng sạch modal
+      setCancelModalOpen(false);
+      setSelectedCancelReason("");
+      setCustomCancelReason("");
+
+      fetchOrders();
+    } catch (error: any) {
+      msgApi.error(error.response?.data?.message || "Hủy đơn hàng thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openReturnRequestModal = (order: Order) => {
-  setSelectedReturnOrder(order);
-  setReturnModalOpen(true);
-};
-
-
+    setSelectedReturnOrder(order);
+    setReturnModalOpen(true);
+  };
 
   const approveReturnRequest = async (orderId: string) => {
-  const token = localStorage.getItem("admin_token");
-  if (!token) {
-    msgApi.error("Chưa đăng nhập admin");
-    return;
-  }
+    const token = localStorage.getItem("admin_token");
+    if (!token) {
+      msgApi.error("Chưa đăng nhập admin");
+      return;
+    }
 
-  try {
-    setModalLoading(true);
+    try {
+      setModalLoading(true);
 
-    await axios.put(
-      `http://localhost:5004/api/orders/approveReturnOrder/${orderId}`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      await axios.put(
+        `http://localhost:5004/api/orders/approveReturnOrder/${orderId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    msgApi.success("Đã duyệt yêu cầu Trả hàng / Hoàn tiền");
-    setReturnModalOpen(false);
-    setSelectedReturnOrder(null);
-    fetchOrders(); // reload list
-  } catch (error: any) {
-    msgApi.error(
-      error.response?.data?.message || "Duyệt trả hàng hoàn tiền thất bại"
-    );
-  } finally {
-    setModalLoading(false);
-  }
-};
+      msgApi.success("Đã duyệt yêu cầu Trả hàng / Hoàn tiền");
+      setReturnModalOpen(false);
+      setSelectedReturnOrder(null);
+      fetchOrders();
+    } catch (error: any) {
+      msgApi.error(
+        error.response?.data?.message || "Duyệt trả hàng hoàn tiền thất bại"
+      );
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
-const rejectReturnRequest = async (orderId: string) => {
-  if (!selectedReturnOrder) return;
+  const rejectReturnRequest = async (orderId: string, reason: string) => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
 
-  const token = localStorage.getItem("admin_token");
-  try {
-    setModalLoading(true);
-    await axios.put(
-      `http://localhost:5004/api/orders/rejectReturnOrder/${orderId}`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    msgApi.success("Đã từ chối yêu cầu Trả hàng / Hoàn tiền. Đơn hàng sẽ tự động trở về trạng thái cũ");
-    setSelectedReturnOrder(null);
-    fetchOrders();
-  } catch (err: any) {
-    msgApi.error(err.response?.data?.message || "Từ chối yêu cầu thất bại");
-  } finally {
-    setModalLoading(false);
-  }
-};
+    try {
+      setRejectLoading(true);
+
+      await axios.put(
+        `http://localhost:5004/api/orders/rejectReturnOrder/${orderId}`,
+        { note: reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      msgApi.success("Đã từ chối yêu cầu Trả hàng / Hoàn tiền");
+
+
+      setRejectModalOpen(false);
+      setReturnModalOpen(false);
+      setSelectedReturnOrder(null);
+      setSelectedRejectReason("");
+      setCustomRejectReason("");
+
+      fetchOrders();
+    } catch (err: any) {
+      msgApi.error(err.response?.data?.message || "Từ chối yêu cầu thất bại");
+    } finally {
+      setRejectLoading(false);
+    }
+  };
 
   const statusColor = (status: string) => {
-  switch (status) {
-    case "Đang yêu cầu Trả hàng/Hoàn tiền":
-      return "orange";
-    case "Trả hàng/Hoàn tiền thành công":
-      return "green";
-    default:
-      return "blue";
-  }
-};
-
+    switch (status) {
+      case "Đang yêu cầu Trả hàng/Hoàn tiền":
+        return "orange";
+      case "Trả hàng/Hoàn tiền thành công":
+        return "green";
+      default:
+        return "blue";
+    }
+  };
 
   const columns = [
     { 
@@ -212,28 +238,25 @@ const rejectReturnRequest = async (orderId: string) => {
       key: "_id",
       render: (id: string) => `#${id?.slice(-8)}`
     },
-   { 
-  title: "Khách hàng", 
-  dataIndex: "user_id", 
-  key: "user_id", 
-  render: (user: any) => {
-    if (!user) return "—";
+    { 
+      title: "Khách hàng", 
+      dataIndex: "user_id", 
+      key: "user_id", 
+      render: (user: any) => {
+        if (!user) return "—";
 
-    // Nếu backend trả về string (chưa populate)
-    if (typeof user === "string") {
-      return `User #${user.slice(-6)}`;
-    }
+        if (typeof user === "string") {
+          return `User #${user.slice(-6)}`;
+        }
 
-    // Nếu đã populate
-    return (
-      user.name ||
-      user.email ||
-      `User #${user._id?.slice(-6)}` ||
-      "—"
-    );
-  }
-},
-
+        return (
+          user.name ||
+          user.email ||
+          `User #${user._id?.slice(-6)}` ||
+          "—"
+        );
+      }
+    },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -255,40 +278,35 @@ const rejectReturnRequest = async (orderId: string) => {
       render: (date: string) => new Date(date).toLocaleDateString('vi-VN')
     },
     {
-  title: "Hành động",
-  key: "action",
-  render: (_: any, record: Order) => (
-    <div style={{ display: "flex", gap: 8 }}>
-      <Link to={`/orders/details/${record._id}`}>
-        <Button icon={<InfoCircleOutlined />} size="small" type="primary">
-          Chi tiết
-        </Button>
-      </Link>
-      {record.status === "Chờ xử lý" && (
-      <Button
-        size="small"
-        danger
-        onClick={() => openCancelModal(record._id)}
-      >
-        Hủy đơn
-      </Button>
-    )}
-
-      {record.status === "Đang yêu cầu Trả hàng/Hoàn tiền" && (
-        
-          <Button size="small" type="primary" 
-          onClick={() => openReturnRequestModal(record)}
-          >
-            Xem yêu cầu
-          </Button>
-
-      )}
-    </div>
-  ),
-},
+      title: "Hành động",
+      key: "action",
+      render: (_: any, record: Order) => (
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link to={`/orders/details/${record._id}`}>
+            <Button icon={<InfoCircleOutlined />} size="small" type="primary">
+              Chi tiết
+            </Button>
+          </Link>
+          {record.status === "Chờ xử lý" && (
+            <Button
+              size="small"
+              danger
+              onClick={() => openCancelModal(record._id)}
+            >
+              Hủy đơn
+            </Button>
+          )}
+          {record.status === "Đang yêu cầu Trả hàng/Hoàn tiền" && (
+            <Button size="small" type="primary" 
+              onClick={() => openReturnRequestModal(record)}
+            >
+              Xem yêu cầu
+            </Button>
+          )}
+        </div>
+      ),
+    },
   ];
-
-  console.log("🎨 Rendering component, data length:", data.length);
 
   return (
     <div style={{ padding: 24 }}>
@@ -315,93 +333,188 @@ const rejectReturnRequest = async (orderId: string) => {
         />
       </Card>
 
+      {/* Modal hủy đơn hàng */}
       <Modal
-          title="Hủy đơn hàng"
-          open={cancelModalOpen}
-          onOk={confirmCancelOrder}
-          onCancel={() => setCancelModalOpen(false)}
-          okText="Xác nhận hủy"
-          cancelText="Đóng"
-          confirmLoading={loading}
-        >
-          <p>Vui lòng nhập lý do hủy đơn:</p>
+        title="Hủy đơn hàng"
+        open={cancelModalOpen}
+        onCancel={() => {
+          setCancelModalOpen(false);
+          setSelectedCancelReason("");
+          setCustomCancelReason("");
+        }}
+        okText="Xác nhận hủy"
+        cancelText="Đóng"
+        confirmLoading={loading}
+        onOk={() => {
+          if (!selectedCancelReason) {
+            msgApi.warning("Vui lòng chọn lý do hủy đơn");
+            return;
+          }
+
+          if (selectedCancelReason === "Khác" && !customCancelReason.trim()) {
+            msgApi.warning("Vui lòng nhập lý do cụ thể");
+            return;
+          }
+
+          const finalReason =
+            selectedCancelReason === "Khác"
+              ? customCancelReason
+              : selectedCancelReason;
+
+          confirmCancelOrder(finalReason);
+        }}
+      >
+        <p>Vui lòng chọn lý do hủy đơn:</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {CANCEL_REASONS.map((reason) => (
+            <label key={reason} style={{ cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="cancelReason"
+                value={reason}
+                checked={selectedCancelReason === reason}
+                onChange={() => setSelectedCancelReason(reason)}
+                style={{ marginRight: 8 }}
+              />
+              {reason}
+            </label>
+          ))}
+        </div>
+        {selectedCancelReason === "Khác" && (
           <Input.TextArea
-            rows={4}
+            rows={3}
             placeholder="Nhập lý do hủy đơn..."
-            value={cancelNote}
-            onChange={(e) => setCancelNote(e.target.value)}
+            style={{ marginTop: 12 }}
+            value={customCancelReason}
+            onChange={(e) => setCustomCancelReason(e.target.value)}
           />
-        </Modal>
+        )}
+      </Modal>
 
-      {selectedReturnOrder && (
-       <Modal
-          open={returnModalOpen}
-          title="Yêu cầu Trả hàng / Hoàn tiền"
-          onCancel={() => setReturnModalOpen(false)}
-          footer={[
-            <Button
-              key="reject"
-              danger
-              onClick={() => {
-                if (selectedReturnOrder) {
-                  rejectReturnRequest(selectedReturnOrder._id);
-                }
-              }}
-              loading={modalLoading}
-            >
-              Từ chối
-            </Button>,
-            <Button
-              key="approve"
-              type="primary"
-              loading={modalLoading}
-              onClick={() => {
-                if (selectedReturnOrder) {
-                  approveReturnRequest(selectedReturnOrder._id);
-                }
-              }}
-            >
-              Xác nhận
-            </Button>,
-          ]}
-          width={600}
+      {/* Modal xem yêu cầu trả hàng */}
+      <Modal
+        open={returnModalOpen}
+        title="Yêu cầu Trả hàng / Hoàn tiền"
+        destroyOnClose
+        onCancel={() => setReturnModalOpen(false)}
+        footer={[
+          <Button
+            key="reject"
+            danger
+            onClick={() => {
+              setSelectedRejectReason("");
+              setCustomRejectReason("");
+              setRejectModalOpen(true);
+            }}
+          >
+            Từ chối
+          </Button>,
+          <Button
+            key="approve"
+            type="primary"
+            loading={modalLoading}
+            onClick={() => {
+              if (selectedReturnOrder) {
+                approveReturnRequest(selectedReturnOrder._id);
+              }
+            }}
+          >
+            Xác nhận
+          </Button>,
+        ]}
+        width={600}
+      >
+        {selectedReturnOrder ? (
+          <>
+            <p>
+              <strong>Lý do:</strong>
+            </p>
+            <p style={{ whiteSpace: "pre-wrap" }}>
+              {selectedReturnOrder.note}
+            </p>
+
+            {selectedReturnOrder.images_return &&
+              selectedReturnOrder.images_return.length > 0 && (
+                <>
+                  <p style={{ marginTop: 16 }}>
+                    <strong>Ảnh đính kèm:</strong>
+                  </p>
+                  <Image.PreviewGroup>
+                    {selectedReturnOrder.images_return.map(
+                      (img: string, idx: number) => (
+                        <Image
+                          key={idx}
+                          src={img}
+                          width={100}
+                          style={{ marginRight: 8, borderRadius: 6 }}
+                        />
+                      )
+                    )}
+                  </Image.PreviewGroup>
+                </>
+              )}
+          </>
+        ) : (
+          <p>Không tìm thấy thông tin yêu cầu</p>
+        )}
+      </Modal>
+
+      {/* Modal từ chối yêu cầu trả hàng */}
+      <Modal
+        title="Lý do không chấp nhận Trả hàng / Hoàn tiền"
+        open={rejectModalOpen}
+        destroyOnClose
+        confirmLoading={rejectLoading}
+        okText="Xác nhận từ chối"
+        cancelText="Hủy"
+        onCancel={() => {
+          setRejectModalOpen(false);
+          setSelectedRejectReason("");
+          setCustomRejectReason("");
+        }}
+        onOk={async () => {
+          if (!selectedRejectReason) {
+            msgApi.warning("Vui lòng chọn lý do");
+            return;
+          }
+
+          if (selectedRejectReason === "Khác" && !customRejectReason.trim()) {
+            msgApi.warning("Vui lòng nhập lý do cụ thể");
+            return;
+          }
+
+          const finalReason =
+            selectedRejectReason === "Khác"
+              ? customRejectReason
+              : selectedRejectReason;
+
+          if (selectedReturnOrder) {
+            await rejectReturnRequest(selectedReturnOrder._id, finalReason);
+          }
+        }}
+      >
+        <Radio.Group
+          value={selectedRejectReason}
+          onChange={(e) => setSelectedRejectReason(e.target.value)}
+          style={{ display: "flex", flexDirection: "column", gap: 8 }}
         >
-          {selectedReturnOrder ? (
-            <>
-              <p>
-                <strong>Lý do:</strong>
-              </p>
-              <p style={{ whiteSpace: "pre-wrap" }}>
-                {selectedReturnOrder.note}
-              </p>
+          {REJECT_REASONS.map((reason) => (
+            <Radio key={reason} value={reason}>
+              {reason}
+            </Radio>
+          ))}
+        </Radio.Group>
 
-              {selectedReturnOrder.images_return &&
-                selectedReturnOrder.images_return.length > 0 && (
-                  <>
-                    <p style={{ marginTop: 16 }}>
-                      <strong>Ảnh đính kèm:</strong>
-                    </p>
-
-                    <Image.PreviewGroup>
-                      {selectedReturnOrder.images_return.map(
-                        (img: string, idx: number) => (
-                          <Image
-                            key={idx}
-                            src={img}
-                            width={100}
-                            style={{ marginRight: 8, borderRadius: 6 }}
-                          />
-                        )
-                      )}
-                    </Image.PreviewGroup>
-                  </>
-                )}
-            </>
-          ) : (
-            <p>Không tìm thấy thông tin yêu cầu</p>
-          )}
-        </Modal>
-      )}
+        {selectedRejectReason === "Khác" && (
+          <Input.TextArea
+            rows={3}
+            style={{ marginTop: 12 }}
+            placeholder="Nhập lý do cụ thể..."
+            value={customRejectReason}
+            onChange={(e) => setCustomRejectReason(e.target.value)}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Popconfirm, Space, Table, message, Select } from "antd";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button, Popconfirm, Space, Table, message, Select, Switch } from "antd";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "@/config/axios.customize";
@@ -21,10 +22,12 @@ interface Variant {
 }
 
 const Variants = () => {
+  const queryClient = useQueryClient();
   const [variants, setVariants] = useState<Variant[]>([]);
   const [filteredVariants, setFilteredVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -140,6 +143,36 @@ const Variants = () => {
         );
       },
     },
+    { 
+           title: 'Trạng thái', 
+           dataIndex: 'status', 
+           key: 'status', 
+           width: 100, 
+           render: (status: string, record: Variant) => (
+            <Switch
+              loading={loadingId === record._id}
+              checked={status === "active"}
+              style={{ minWidth: 50 }}
+              onChange={async (checked) => {
+                setLoadingId(record._id);
+                try {
+                  await api.put(`/variants/${record._id}`, {
+                    status: checked ? "active" : "inactive",
+                  });
+    
+                  message.success("Cập nhật trạng thái của biến thể thành công!");
+                  queryClient.invalidateQueries({ queryKey: ["variants"] });
+                } catch (error) {
+                  console.error(error);
+                  message.error("Cập nhật trạng thái thất bại!");
+                }
+                finally {
+              setLoadingId(null);
+            }
+              }}
+            />
+           )
+         },
     {
       title: "Hành động",
       key: "action",
