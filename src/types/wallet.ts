@@ -55,7 +55,7 @@ export interface WalletFormData {
 
 export interface TransactionFormData {
   wallet: string;
-  type: 'Nạp tiền' | 'Rút tiền'; // Chỉ 2 loại theo backend
+  type: 'Nạp tiền' | 'Rút tiền'; 
   amount: number;
   description: string;
   withdrawalMethod?: string;

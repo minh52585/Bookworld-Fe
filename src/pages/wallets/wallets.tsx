@@ -1,46 +1,40 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Tag, Alert, App } from 'antd';
-import { ArrowLeftOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { useParams, useNavigate } from 'react-router-dom';
-import { transactionAPI } from '@/apis/wallets';
-import { WalletTransaction } from '@/types/wallet';
+import { Table, Button, Tag, Card, Statistic, Row, Col, App } from 'antd';
+import { WalletOutlined, EyeOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { walletAPI } from '@/apis/wallets';
+import { Wallet } from '@/types/wallet';
 
-const WalletTransactions = () => {
-  const { walletId } = useParams<{ walletId: string }>();
+const WalletsPage = () => {
   const navigate = useNavigate();
   const { message } = App.useApp();
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch transactions for specific wallet
-  const fetchTransactions = async () => {
-    if (!walletId) return;
-    
+  // Fetch danh sách ví của người dùng
+  const fetchWallets = async () => {
     setLoading(true);
     try {
-      const response = await transactionAPI.getTransactionsByWalletId(walletId);
+      const response = await walletAPI.getAllWallets();
       if (response.success) {
-        const formattedData = response.data.map((transaction: WalletTransaction, index: number) => ({
-          ...transaction,
-          stt: index + 1,
-          key: transaction._id,
-        }));
-        setTransactions(formattedData);
+        setWallets(response.data);
+        message.success(response.message || 'Lấy danh sách ví thành công');
       } else {
-        message.error(response.message || 'Lỗi khi lấy giao dịch');
+        message.error(response.message || 'Lỗi khi lấy danh sách ví');
+        setWallets([]);
       }
     } catch (error: any) {
       console.error('API Error:', error);
-      message.error('Không thể lấy danh sách giao dịch của ví này từ backend.');
-      setTransactions([]); // Set empty array thay vì dữ liệu mẫu
+      message.error('Không thể lấy danh sách ví từ backend.');
+      setWallets([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, [walletId]);
+    fetchWallets();
+  }, []);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -50,37 +44,20 @@ const WalletTransactions = () => {
     }).format(amount);
   };
 
-  // Get transaction type color
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'Nạp tiền':
-        return 'green';
-      case 'Rút tiền':
-        return 'red';
-      case 'Thanh toán':
-        return 'orange';
-      case 'Hoàn tiền':
-        return 'cyan';
+  // Get status color and text
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'active':
+        return { color: 'green', text: 'Hoạt động' };
+      case 'locked':
+        return { color: 'red', text: 'Bị khóa' };
       default:
-        return 'default';
+        return { color: 'default', text: status };
     }
   };
 
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Thành công':
-        return 'green';
-      case 'Chờ xử lý':
-        return 'orange';
-      case 'Thất bại':
-        return 'red';
-      case 'Đã hủy':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
+  // Tính tổng số dư tất cả ví
+  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
 
   const columns = [
     {
@@ -88,110 +65,117 @@ const WalletTransactions = () => {
       dataIndex: 'stt',
       key: 'stt',
       width: 60,
+      render: (_: any, __: any, index: number) => index + 1,
     },
     {
       title: 'Người dùng',
       key: 'user',
-      render: (record: WalletTransaction) => (
-        <div>
-          <div><strong>{record.user?.name || 'N/A'}</strong></div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.user?.email}
+      render: (record: Wallet) => {
+        // Nếu user là object (đã populate)
+        if (typeof record.user === 'object' && record.user !== null) {
+          return (
+            <div>
+              <div><strong>{record.user.name || record.user.email?.split('@')[0] || 'N/A'}</strong></div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {record.user.email}
+              </div>
+            </div>
+          );
+        }
+        
+        // Nếu user chỉ là ObjectId string
+        return (
+          <div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              User ID: {record.user}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
-      title: 'Loại giao dịch',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type: string) => (
-        <Tag color={getTypeColor(type)}>
-          {type}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Số tiền',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount: number, record: WalletTransaction) => (
-        <span style={{ 
-          fontWeight: 'bold', 
-          color: record.type === 'Nạp tiền' ? '#52c41a' : '#ff4d4f' 
-        }}>
-          {record.type === 'Nạp tiền' ? '+' : '-'}{formatCurrency(amount)}
+      title: 'Số dư',
+      dataIndex: 'balance',
+      key: 'balance',
+      render: (balance: number) => (
+        <span style={{ fontWeight: 'bold', color: '#1890ff', fontSize: '16px' }}>
+          {formatCurrency(balance)}
         </span>
       ),
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {status}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Phương thức rút',
-      dataIndex: 'withdrawalMethod',
-      key: 'withdrawalMethod',
-      render: (method: any) => {
-        if (!method) return '-';
-        if (typeof method === 'object') {
-          return method.name || method._id;
-        }
-        return method;
+      render: (status: string) => {
+        const statusDisplay = getStatusDisplay(status);
+        return (
+          <Tag color={statusDisplay.color}>
+            {statusDisplay.text}
+          </Tag>
+        );
       },
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleString('vi-VN'),
+      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
     },
+    {
+      title: 'Cập nhật cuối',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
+    },
+  
   ];
 
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/wallets')}
-          style={{ marginBottom: 16 }}
-        >
-          Quay lại danh sách ví
-        </Button>
+        <h1 style={{ display: 'flex', alignItems: 'center' }}>
+          <WalletOutlined style={{ marginRight: 8 }} />
+          Danh sách ví người dùng
+        </h1>
+      </div>
+
+      {/* Thống kê tổng quan */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Tổng số ví"
+              value={wallets.length}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
         
-      
-      </div>
+       
+      </Row>
 
-      <div style={{ marginBottom: 24 }}>
-        <h1>Lịch sử giao dịch ví</h1>
-      </div>
-
-      <Table
-        columns={columns}
-        dataSource={transactions}
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giao dịch`,
-        }}
-        scroll={{ x: 1000 }}
-      />
+      {/* Bảng danh sách ví */}
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={wallets}
+          loading={loading}
+          rowKey="_id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} ví`,
+          }}
+          locale={{
+            emptyText: 'Chưa có ví nào trong hệ thống.'
+          }}
+          scroll={{ x: 1000 }}
+        />
+      </Card>
     </div>
   );
 };
 
-export default WalletTransactions;
+export default WalletsPage;

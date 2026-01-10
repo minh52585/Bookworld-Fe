@@ -1,7 +1,9 @@
 export interface ICategory {
-  id: string;
-  _id:string
+  _id: string;
   name: string;
+  slug: string;
   description: string;
-  status: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
 }

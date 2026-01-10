@@ -1,6 +1,5 @@
-import api from '@/config/axios.customize';
-import { ICategory } from '@/types/category';
-import { useQuery } from '@tanstack/react-query';
+import { getCategoryById, updateCategory, ICategory } from '@/apis/categories';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Form, Input, message, Select } from 'antd';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -10,48 +9,45 @@ const EditCategory = () => {
   const { TextArea } = Input;
   const nav = useNavigate();
   const [form] = Form.useForm();
+  const queryClient = useQueryClient();
 
-  const { data } = useQuery({
+  // Lấy dữ liệu category
+  const { data, isLoading } = useQuery({
     queryKey: ['categories', id],
-    queryFn: async () => {
-      try {
-        const res = await api.get(`/categories/${id}`);
-        console.log('DATA', res.data);
-        return res.data?.data ?? res.data;
-      } catch (error) {
-        console.log(error);
-        return null;
-      }
+    queryFn: () => getCategoryById(id!),
+    enabled: !!id,
+  });
+
+  // Mutation để cập nhật category
+  const updateMutation = useMutation({
+    mutationFn: (values: Partial<ICategory>) => updateCategory(id!, values),
+    onSuccess: () => {
+      message.success('Cập nhật danh mục thành công!');
+      // Invalidate cache để refresh danh sách categories
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      nav('/categories');
+    },
+    onError: (error: any) => {
+      console.error('Update error:', error);
+      message.error(error?.response?.data?.message || 'Cập nhật thất bại');
     },
   });
 
   useEffect(() => {
-    if (data) {
+    if (data?.data?.category) {
+      // Backend trả về { category: {...}, products: [...] }
       form.setFieldsValue({
-        ...data,
+        name: data.data.category.name,
+        description: data.data.category.description,
+        status: data.data.category.status,
       });
     }
   }, [data, form]);
 
-  const onFinish = async (values: ICategory) => {
-    try {
-      // --- THÊM TOKEN VÀO ĐOẠN NÀY ---
-      const token = localStorage.getItem("admin_token");
-      
-      await api.put(`/categories/${id}`, values, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      // ------------------------------
-
-      console.log('Category:', values);
-      message.success('Sửa danh mục thành công!');
-      nav('/categories');
-    } catch (err: any) {
-      console.error(err);
-      message.error(err?.response?.data?.message || 'Cập nhật thất bại');
-    }
+  const onFinish = (values: ICategory) => {
+    // Chỉ gửi name, description, status - backend sẽ tự tạo slug
+    const { name, description, status } = values;
+    updateMutation.mutate({ name, description, status });
   };
 
   return (
@@ -70,28 +66,20 @@ const EditCategory = () => {
             { min: 3, message: 'Ít nhất 3 ký tự' }
           ]}
         >
-          <Input placeholder="VD: Tiểu thuyết" />
+          <Input placeholder="VD: Tiểu thuyết" disabled={isLoading} />
         </Form.Item>
-        <Form.Item
-          label="Tên đường dẫn"
-          name="slug"
-          rules={[
-            { required: true, message: 'Vui lòng nhập tên đường dẫn' },
-            { min: 3, message: 'Ít nhất 3 ký tự' }
-          ]}
-        >
-          <Input placeholder="VD: tieu-thuyet"/>
-        </Form.Item>
+        
         <Form.Item
           label="Trạng thái"
           name="status"
           initialValue="active"
         >
-          <Select>
+          <Select disabled={isLoading}>
             <Select.Option value="active">Mở</Select.Option>
             <Select.Option value="inactive">Khoá</Select.Option>
           </Select>
         </Form.Item>
+        
         <Form.Item
           label="Mô tả"
           name="description"
@@ -100,12 +88,18 @@ const EditCategory = () => {
             { min: 10, message: 'Mô tả ít nhất 10 ký tự' }
           ]}
         >
-          <TextArea rows={3} placeholder="Mô tả hiển thị" />
+          <TextArea rows={3} placeholder="Mô tả hiển thị" disabled={isLoading} />
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Xác nhận
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            block
+            loading={updateMutation.isPending || isLoading}
+            disabled={isLoading}
+          >
+            {updateMutation.isPending ? 'Đang cập nhật...' : isLoading ? 'Đang tải...' : 'Xác nhận'}
           </Button>
         </Form.Item>
       </Form>
