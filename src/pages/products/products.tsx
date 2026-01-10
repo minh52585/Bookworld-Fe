@@ -59,7 +59,7 @@ const ProductsPage = () => {
   const { data: products = [], isLoading } = useQuery<IProductWithCategory[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const res = await api.get('/products');
+      const res = await api.get('/products/admin/products');
       const items = res.data?.data?.items ?? [];
 
       return items.map((item: any, index: number) => ({

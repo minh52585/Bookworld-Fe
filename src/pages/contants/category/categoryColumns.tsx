@@ -3,11 +3,15 @@ import { ICategory } from '@/types/category';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Space, Popconfirm, Button, Switch, message } from 'antd';
 import { Link } from 'react-router';
+import { useState } from 'react';
+
 
 export const getCategoryColumns = (
   queryClient: any,
   DelCategory: (id: string) => void
-) => [
+) => {
+const [loadingId, setLoadingId] = useState<string | null>(null);
+  return [
   {
     title: 'ID',
     key: 'index',
@@ -23,31 +27,34 @@ export const getCategoryColumns = (
     dataIndex: 'description',
     key: 'description',
   },
-  // {
-  //   title: 'Trạng thái',
-  //   dataIndex: 'status',
-  //   key: 'status',
-  //   render: (status: string, record: ICategory) => (
-  //     <Switch
-  //       checked={status === 'active'}
-  //       checkedChildren="Mở"
-  //       unCheckedChildren="Khoá"
-  //       style={{ minWidth: 50 }}
-  //       onChange={async (checked) => {
-  //         try {
-  //           await api.put(`/categories/${record._id}`, {
-  //             status: checked ? 'active' : 'inactive',
-  //           });
-  //           message.success('Cập nhật trạng thái thành công!');
-  //           queryClient.invalidateQueries({ queryKey: ['category'] });
-  //         } catch (error) {
-  //           console.error('Cập nhật trạng thái thất bại:', error);
-  //           message.error('Cập nhật trạng thái thất bại!');
-  //         }
-  //       }}
-  //     />
-  //   ),
-  // },
+  {
+    title: "Trạng thái",
+    dataIndex: "status",
+    key: "status",
+    width: 120,
+    render: (status: string, record: ICategory) => (
+      <Switch
+        loading={loadingId === record._id}
+        checked={status === "active"}
+        onChange={async (checked) => {
+          setLoadingId(record._id);
+          try {
+            await api.put(`/categories/status/${record._id}`, {
+              status: checked ? "active" : "inactive",
+            });
+
+            message.success("Cập nhật trạng thái thành công!");
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
+          } catch (error) {
+            console.error(error);
+            message.error("Cập nhật trạng thái thất bại!");
+          } finally {
+            setLoadingId(null);
+          }
+        }}
+      />
+    ),
+  },
   {
     title: 'Hành động',
     key: 'action',
@@ -76,4 +83,4 @@ export const getCategoryColumns = (
       </Space>
     ),
   },
-];
+]};

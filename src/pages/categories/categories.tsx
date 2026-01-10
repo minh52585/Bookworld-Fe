@@ -12,7 +12,7 @@ const Category = () => {
     queryKey: ['categories'],
     queryFn: async () => {
       try {
-        const res = await api.get('/categories');
+        const res = await api.get('/categories/admin/categories');
         console.log('API categories:', res.data);
         const d = res.data;
         if (Array.isArray(d)) return d;
