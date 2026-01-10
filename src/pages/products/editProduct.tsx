@@ -110,8 +110,9 @@ const ProductsUpdate = () => {
       // Lưu ý: Controller hiện tại chỉ hỗ trợ cập nhật status
       // Chỉ gửi status để tránh lỗi
       const payload = {
-        status: values.status ? "active" : "inactive",
-      };
+      ...values,
+      status: values.status ? "active" : "inactive",
+    };
 
       console.log("⚠️ Chỉ cập nhật status vì controller chỉ hỗ trợ field này");
       console.log("Payload:", payload);
@@ -206,13 +207,14 @@ const ProductsUpdate = () => {
           </Col>
         </Row>
 
-        {/* <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="Trạng thái" name="status" valuePropName="checked">
-              <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" />
-            </Form.Item>
-          </Col>
-        </Row> */}
+        <Form.Item
+        label="Trạng thái"
+        name="status"
+        valuePropName="checked"
+      >
+        <Switch checkedChildren="Hoạt động" unCheckedChildren="Ẩn" />
+      </Form.Item>
+
 
         <Row gutter={16}>
           <Col span={8}>

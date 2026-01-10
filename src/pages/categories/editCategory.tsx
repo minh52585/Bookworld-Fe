@@ -69,7 +69,7 @@ const EditCategory = () => {
           <Input placeholder="VD: Tiểu thuyết" disabled={isLoading} />
         </Form.Item>
         
-        <Form.Item
+        {/* <Form.Item
           label="Trạng thái"
           name="status"
           initialValue="active"
@@ -78,7 +78,7 @@ const EditCategory = () => {
             <Select.Option value="active">Mở</Select.Option>
             <Select.Option value="inactive">Khoá</Select.Option>
           </Select>
-        </Form.Item>
+        </Form.Item> */}
         
         <Form.Item
           label="Mô tả"
