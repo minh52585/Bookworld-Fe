@@ -99,14 +99,28 @@ const WalletManagement = () => {
     {
       title: 'Người dùng',
       key: 'user',
-      render: (record: Wallet) => (
-        <div>
-          <div><strong>{record.user?.name || record.user?.email?.split('@')[0] || 'N/A'}</strong></div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.user?.email}
+      render: (record: Wallet) => {
+        // Nếu user là object (đã populate)
+        if (typeof record.user === 'object' && record.user !== null) {
+          return (
+            <div>
+              <div><strong>{record.user.name || record.user.email?.split('@')[0] || 'N/A'}</strong></div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {record.user.email}
+              </div>
+            </div>
+          );
+        }
+        
+        // Nếu user chỉ là ObjectId string
+        return (
+          <div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              User ID: {record.user}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Số dư',

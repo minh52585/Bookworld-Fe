@@ -2,6 +2,7 @@ import { Button, Form, Input, InputNumber, Select, Row, Col, Upload, Switch, mes
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/config/axios.customize';
 
@@ -10,6 +11,7 @@ const ProductsUpdate = () => {
   const nav = useNavigate();
   const { id } = useParams();
   const { TextArea } = Input;
+  const queryClient = useQueryClient();
 
   const [cats, setCats] = useState<any[]>([]);
   const [loadingCats, setLoadingCats] = useState(false);
@@ -105,16 +107,15 @@ const ProductsUpdate = () => {
   // Submit update
   const onFinish = async (values: any) => {
     try {
+      // Lưu ý: Controller hiện tại chỉ hỗ trợ cập nhật status
+      // Chỉ gửi status để tránh lỗi
       const payload = {
-        ...values,
-        price: Number(values.price || 0),
-        quantity: Number(values.quantity || 0),
-        weight: Number(values.weight || 0),
-        namxuatban: Number(values.namxuatban || 0),
-        sotrang: Number(values.sotrang || 0),
-        status: values.status ?? true,
-        images: values.images || images,
-      };
+      ...values,
+      status: values.status ? "active" : "inactive",
+    };
+
+      console.log("⚠️ Chỉ cập nhật status vì controller chỉ hỗ trợ field này");
+      console.log("Payload:", payload);
 
       // --- CHỈ THÊM TOKEN VÀO ĐOẠN NÀY ---
       const token = localStorage.getItem("admin_token");
@@ -125,11 +126,29 @@ const ProductsUpdate = () => {
       });
       // ----------------------------------
 
-      messageApi.success('Cập nhật sản phẩm thành công!');
-      nav('/products');
+      messageApi.success('Cập nhật trạng thái sản phẩm thành công! (Chỉ status được cập nhật)');
+      
+      // Force clear cache và refetch
+      queryClient.removeQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      
+      // Delay một chút rồi navigate
+      setTimeout(() => {
+        nav('/products');
+      }, 300);
     } catch (err: any) {
-      console.error(err);
-      messageApi.error(err?.response?.data?.message || 'Cập nhật thất bại!');
+      console.error("❌ Edit product error:", err);
+      console.error("❌ Error response:", err?.response?.data);
+      console.error("❌ Error status:", err?.response?.status);
+      
+      let errorMessage = 'Cập nhật thất bại!';
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.response?.status === 500) {
+        errorMessage = 'Lỗi server. Vui lòng kiểm tra backend logs.';
+      }
+      
+      messageApi.error(errorMessage);
     }
   };
 
@@ -188,13 +207,14 @@ const ProductsUpdate = () => {
           </Col>
         </Row>
 
-        {/* <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="Trạng thái" name="status" valuePropName="checked">
-              <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" />
-            </Form.Item>
-          </Col>
-        </Row> */}
+        <Form.Item
+        label="Trạng thái"
+        name="status"
+        valuePropName="checked"
+      >
+        <Switch checkedChildren="Hoạt động" unCheckedChildren="Ẩn" />
+      </Form.Item>
+
 
         <Row gutter={16}>
           <Col span={8}>

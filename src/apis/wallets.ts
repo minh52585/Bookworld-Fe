@@ -124,6 +124,18 @@ export const walletAPI = {
   },
 };
 
+// Lấy ví của user hiện tại
+export const getMyWallet = async () => {
+  const token = localStorage.getItem('token'); // User token, không phải admin_token
+  const response = await axios.get(`${API_BASE_URL}/wallets/my-wallet`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    }
+  });
+  return response.data;
+};
+
 // Transaction APIs - Sử dụng endpoints từ routes thực tế
 export const transactionAPI = {
   // Get all transactions (admin) - Sử dụng route /getWalletTransaction

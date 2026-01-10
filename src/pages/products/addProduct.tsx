@@ -2,12 +2,14 @@ import { Button, Form, Input, InputNumber, Select, Row, Col, Upload, Spin, messa
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '@/config/axios.customize';
 import axios from 'axios';
 
 const ProductsAdd = () => {
   const [form] = Form.useForm();
   const nav = useNavigate();
+  const queryClient = useQueryClient();
   const { TextArea } = Input;
 
   const [cats, setCats] = useState<any[]>([]);
@@ -75,24 +77,53 @@ const ProductsAdd = () => {
   };
 
   // Submit form
-  // Submit form
-  // Trong file ProductsAdd.tsx
   const onFinish = async (values: any) => {
     try {
-      const payload = { ...values, /* các ép kiểu khác giữ nguyên */ };
+      // Prepare payload to match backend schema
+      const payload = { 
+        name: values.name,
+        author: values.author,
+        namxuatban: values.namxuatban,
+        nhaxuatban: values.nhaxuatban,
+        sotrang: values.sotrang,
+        description: values.description,
+        images: images, // Backend expects array of strings
+        category: values.category, // ObjectId from select
+        weight: values.weight || 0,
+        size: values.size || "",
+        status: values.status || "active",
+        sku: values.sku || ""
+      };
 
-      // SỬA TÊN Ở ĐÂY: "token" thành "admin_token" cho khớp với file Login
+      console.log('Sending payload:', payload); // Debug log
+
       const token = localStorage.getItem("admin_token"); 
 
-      await api.post('/products', payload, {
+      const response = await api.post('/products', payload, {
         headers: {
           Authorization: `Bearer ${token}` 
         }
       });
 
+      // Cập nhật cache để thêm sản phẩm mới vào cuối danh sách
+      const newProduct = response.data.data;
+      queryClient.setQueryData(['products'], (oldData: any) => {
+        if (!oldData) return [newProduct];
+        
+        // Thêm sản phẩm mới vào cuối danh sách với STT
+        const newProductWithStt = {
+          ...newProduct,
+          stt: oldData.length + 1,
+          images: Array.isArray(newProduct.images) ? newProduct.images : []
+        };
+        
+        return [...oldData, newProductWithStt];
+      });
+
       messageApi.success('Thêm sản phẩm thành công!');
       nav('/products');
     } catch (err: any) {
+      console.error('Error creating product:', err.response?.data);
       messageApi.error(err?.response?.data?.message || 'Thêm sản phẩm thất bại!');
     }
   };
@@ -145,29 +176,23 @@ const ProductsAdd = () => {
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item label="Nhà xuất bản" name="nhaxuatban" rules={[{ required: true, message: 'Vui lòng nhập nhà xuất bản' }]}>
+            <Form.Item label="Nhà xuất bản" name="nhaxuatban">
               <Input placeholder="VD: NXB Trẻ" />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Số trang" name="sotrang" rules={[{ required: true, message: 'Vui lòng nhập số trang' }]}>
+            <Form.Item label="Số trang" name="sotrang">
               <InputNumber style={{ width: '100%' }} placeholder="VD: 350" />
             </Form.Item>
           </Col>
         </Row>
 
-        {/* <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item label="Trạng thái" name="status" valuePropName="checked">
-              <Switch checkedChildren="Sẵn" unCheckedChildren="Hết" defaultChecked />
-            </Form.Item>
-          </Col>
-        </Row> */}
+     
 
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item label="Khối lượng (gram)" name="weight">
-              <InputNumber style={{ width: '100%' }} placeholder="VD: 500" />
+              <InputNumber style={{ width: '100%' }} placeholder="VD: 500" min={0} />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -181,6 +206,8 @@ const ProductsAdd = () => {
             </Form.Item>
           </Col>
         </Row>
+
+     
 
         <Form.Item label="Ảnh sản phẩm">
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-start' }}>
