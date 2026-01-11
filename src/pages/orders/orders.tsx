@@ -3,8 +3,18 @@ import { Button, Table, message, Tag, Card } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Popconfirm } from "antd";
+import { Popconfirm, Select } from "antd";
 import { Modal, Input, Image, Radio } from "antd";
+
+const ORDER_TYPES_OPTIONS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Đã hủy', value: 'Đã hủy' },
+  { label: 'Chờ xử lý', value: 'Chờ xử lý' },
+  { label: 'Giao hàng không thành công', value: '"Giao hàng không thành công' },
+  { label: 'Giao hàng thành công', value: 'Giao hàng thành công' },
+  { label: 'Đang yêu cầu Trả hàng/Hoàn tiền', value: 'Đang yêu cầu Trả hàng/Hoàn tiền' },
+  { label: 'Trả hàng/Hoàn tiền thành công', value: 'Trả hàng/Hoàn tiền thành công' }
+];
 
 interface Order {
   _id: string;
@@ -58,6 +68,8 @@ const OrdersAdmin = () => {
   const [customCancelReason, setCustomCancelReason] = useState("");
   const [approveLoading, setApproveLoading] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [selectedOrderType, setSelectedOrderType] =  useState<string>('all');
+  
   const navigate = useNavigate();
 
   const fetchOrders = async () => {
@@ -115,6 +127,12 @@ const OrdersAdmin = () => {
     console.log("🎯 Component mounted, calling fetchOrders");
     fetchOrders();
   }, []);
+
+   const filteredOrders = data.filter((item) => {
+  if (selectedOrderType === 'all') return true;
+  return item.status === selectedOrderType;
+});
+
 
   const openCancelModal = (orderId: string) => {
     setCancelOrderId(orderId);
@@ -318,6 +336,14 @@ const OrdersAdmin = () => {
             <h1>Quản lý đơn hàng</h1>
             <p>Có {data.length} đơn hàng</p>
           </div>
+          <Select
+                value={selectedOrderType}
+                placeholder="-- Chọn trạng thái --"
+                allowClear
+                style={{ width: 220 }}
+                onChange={(value) => setSelectedOrderType(value)}
+                options={ORDER_TYPES_OPTIONS}
+              />
           <Button onClick={fetchOrders} type="primary" loading={loading}>
             Làm mới
           </Button>
@@ -325,7 +351,7 @@ const OrdersAdmin = () => {
 
         <Table 
           columns={columns} 
-          dataSource={data} 
+          dataSource={filteredOrders} 
           rowKey="_id"
           loading={loading}
           pagination={{ pageSize: 10 }}

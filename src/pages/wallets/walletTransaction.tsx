@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Tag, Alert, App, Button, Modal, Upload, Form, Image,Select} from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, EyeOutlined  } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { transactionAPI } from '@/apis/wallets';
 import { WalletTransaction } from '@/types/wallet';
@@ -16,17 +16,27 @@ const TRANSACTION_TYPES_OPTIONS = [
   { label: 'Hoàn tiền', value: 'Hoàn tiền' },
 ];
 
+const REJECT_REASONS = [
+  { label: 'Thông tin tài khoản không khớp', value: 'Thông tin tài khoản không khớp' },
+  { label: 'Số dư không đủ để rút', value: 'Số dư không đủ để rút' },
+  { label: 'Nghi ngờ gian lận', value: 'Nghi ngờ gian lận' },
+  { label: 'Yêu cầu rút tiền không hợp lệ', value: 'Yêu cầu rút tiền không hợp lệ' },
+];
+
 const Wallets = () => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [summary, setSummary] = useState<{totalDeposit: number;totalWithdraw: number;}>({totalDeposit: 0,totalWithdraw: 0,});
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedTransactionType, setSelectedTransactionType] =  useState<string>('all');
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   // Fetch all transactions
   const fetchTransactions = async () => {
     setLoading(true);
@@ -72,7 +82,7 @@ const Wallets = () => {
   };
   const uploadImage = async (file: File) => {
       if (!file) return;
-      setLoading(true);
+      setUploading(true);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', 'reacttest');
@@ -94,6 +104,43 @@ const Wallets = () => {
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  const submitRejectWithdraw = async () => {
+      try {
+        setLoading(true);
+        const token =
+          localStorage.getItem('admin_token') ||
+          localStorage.getItem('token');
+
+        await axios.put(
+          `${API_BASE_URL}/walletTransaction/rejectWithdrawTransaction/${selectedTransaction}`,
+          {
+            reason: rejectReason,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        showNotification(
+          "success",
+          "Đã từ chối yêu cầu rút tiền"
+        );
+
+        setRejectModalOpen(false);
+        setRejectReason('');
+        fetchTransactions();
+      } catch (err: any) {
+        showNotification(
+          "error",
+          err.response?.data?.message || "Từ chối thất bại"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
 
 
@@ -239,6 +286,33 @@ const Wallets = () => {
       render: (date: string) => new Date(date).toLocaleString('vi-VN'),
     },
     {
+        title: 'Thông tin thẻ rút',
+        key: 'withdrawInfo',
+        align: 'center',
+        render: (record: WalletTransaction) => {
+          if (record.type !== 'Rút tiền' || !record.withdrawalMethod) return '—';
+
+          return (
+            <Button
+              size="small"
+              icon={<EyeOutlined  />}
+              onClick={() => {
+                Modal.info({
+                  title: 'Thông tin rút tiền',
+                  content: (
+                    <div>
+                      <p><b>Ngân hàng:</b> {record.withdrawalMethod.bankName}</p>
+                      <p><b>Số tài khoản:</b> {record.withdrawalMethod.accountNumber}</p>
+                      <p><b>Chủ tài khoản:</b> {record.withdrawalMethod.accountName}</p>
+                    </div>
+                  ),
+                });
+              }}
+            />
+          );
+        },
+      },
+    {
       title: "Ảnh giao dịch",
       dataIndex: "image_transaction",
       key: "image_transaction",
@@ -258,9 +332,9 @@ const Wallets = () => {
         ),
     },
     {
-      title: "Thời gian duyệt",
-      dataIndex: "approvedWithDrawalAt",
-      key: "approvedWithDrawalAt",
+      title: "Thời gian",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
       align: "center",
       render: (value: string) =>
         value ? dayjs(value).format("DD/MM/YYYY HH:mm:ss") : "—",
@@ -362,6 +436,16 @@ const Wallets = () => {
           <Button key="cancel" onClick={() => setApproveModalOpen(false)}>
             Hủy
           </Button>,
+           <Button
+            key="reject"
+            danger
+            onClick={() => {
+              setApproveModalOpen(false);
+              setRejectModalOpen(true);
+            }}
+          >
+            Từ chối
+          </Button>,
           <Button
             key="submit"
             type="primary"
@@ -382,7 +466,7 @@ const Wallets = () => {
           maxCount={1}
           accept="image/*"
         >
-          <Button loading={loading}>Upload ảnh giao dịch</Button>
+          <Button loading={uploading}>Upload ảnh giao dịch</Button>
         </Upload>
 
         {imageUrl && (
@@ -391,6 +475,48 @@ const Wallets = () => {
           </div>
         )}
     </Modal>
+
+
+   <Modal
+        title="Từ chối yêu cầu rút tiền"
+        open={rejectModalOpen}
+        onCancel={() => {
+          setRejectModalOpen(false);
+          setRejectReason('');
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setRejectModalOpen(false)}
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            danger
+            type="primary"
+            disabled={!rejectReason}
+            loading={loading}
+            onClick={submitRejectWithdraw}
+          >
+            Xác nhận từ chối
+          </Button>,
+        ]}
+      >
+        <Form layout="vertical">
+          <Form.Item
+            label="Lý do từ chối"
+            required
+          >
+            <Select
+              placeholder="Chọn lý do từ chối"
+              value={rejectReason}
+              onChange={(value) => setRejectReason(value)}
+              options={REJECT_REASONS}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
 
 
