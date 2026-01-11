@@ -46,29 +46,65 @@ export const userAPI = {
 // Wallet APIs - Kết nối với backend thực tế
 export const walletAPI = {
   // Get all wallets - Chỉ hiển thị 1 ví thật có trong database
-  getAllWallets: async (): Promise<{ success: boolean; data: Wallet[]; message?: string }> => {
-    console.log('📋 Hiển thị 1 ví thật có trong database');
-    
-    // Chỉ có 1 ví thật trong database cho user NM
-    const realWallet: Wallet = {
-      _id: "6956c05497820ea8aba93b9f",
-      user: {
-        _id: "6952e80eed368e973b2b7e9f",
-        name: "NM",
-        email: "webhexatech@gmail.com"
-      },
-      balance: 200000,
-      status: "active",
-      createdAt: "2026-01-01T18:43:32.237+00:00",
-      updatedAt: "2026-01-02T08:14:12.315+00:00",
-      __v: 0
-    };
-    
-    return {
-      success: true,
-      data: [realWallet],
-      message: '✅ Hiển thị 1 ví thật có trong database'
-    };
+  getAllWallet: async (): Promise<{ success: boolean; data: Wallet[]; message?: string }> => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/wallet/getAllWallet`, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Lỗi khi lấy thông tin ví');
+    }
+  },
+  lockWallet: async (
+    walletId: string,
+    payload: { reason: string }
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/wallet/lock/${walletId}`,
+        payload,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || "Lý do khóa không hợp lệ");
+      }
+      if (error.response?.status === 401) {
+        throw new Error("UNAUTHORIZED: Token admin không hợp lệ");
+      }
+      if (error.response?.status === 403) {
+        throw new Error("FORBIDDEN: Không có quyền admin");
+      }
+      throw new Error(error.response?.data?.message || "Lỗi khi khóa ví");
+    }
+  },
+
+
+  unlockWallet: async (
+    walletId: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/wallet/unlock/${walletId}`,
+        {},
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        throw new Error("UNAUTHORIZED: Token admin không hợp lệ");
+      }
+      if (error.response?.status === 403) {
+        throw new Error("FORBIDDEN: Không có quyền admin");
+      }
+      throw new Error(error.response?.data?.message || "Lỗi khi mở khóa ví");
+    }
   },
 
   // Get wallet by ID
@@ -248,6 +284,8 @@ export const transactionAPI = {
       throw new Error(error.response?.data?.message || 'Lỗi khi lấy giao dịch của tôi');
     }
   },
+
+  
 
   // Approve withdrawal - Sử dụng endpoint /approveWithDrawal/:transactionId
   approveWithdrawal: async (transactionId: string): Promise<{ success: boolean; message?: string }> => {
