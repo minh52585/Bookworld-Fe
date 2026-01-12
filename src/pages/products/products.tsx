@@ -198,8 +198,8 @@ const ProductsPage = () => {
         <Switch
           loading={loadingId === record._id}
           checked={status === "active"}
-          // checkedChildren="Sẵn"
-          // unCheckedChildren="Hết"
+          checkedChildren="ON"
+          unCheckedChildren="OFF"
           style={{ minWidth: 50 }}
           onChange={async (checked) => {
             setLoadingId(record._id);

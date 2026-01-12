@@ -39,7 +39,7 @@ const Variants = () => {
       try {
         setLoading(true);
         // THÊM TOKEN KHI LẤY DANH SÁCH
-        const res = await api.get("/variants", {
+        const res = await api.get("variants/admin/variants", {
           headers: { Authorization: `Bearer ${token}` }
         });
         const items: Variant[] = res.data?.data?.items ?? res.data?.data ?? [];
@@ -153,22 +153,36 @@ const Variants = () => {
               loading={loadingId === record._id}
               checked={status === "active"}
               style={{ minWidth: 50 }}
+              checkedChildren="ON"
+              unCheckedChildren="OFF"
               onChange={async (checked) => {
                 setLoadingId(record._id);
+
                 try {
-                  await api.put(`/variants/${record._id}`, {
-                    status: checked ? "active" : "inactive",
-                  });
-    
+                  const newStatus = checked ? "active" : "inactive";
+
+                  await api.put(
+                    `/variants/${record._id}`,
+                    { status: newStatus },
+                    {
+                      headers: { Authorization: `Bearer ${token}` },
+                    }
+                  );
+
+                  // ✅ UPDATE STATE NGAY LẬP TỨC
+                  setVariants((prev) =>
+                    prev.map((v) =>
+                      v._id === record._id ? { ...v, status: newStatus } : v
+                    )
+                  );
+
                   message.success("Cập nhật trạng thái của biến thể thành công!");
-                  queryClient.invalidateQueries({ queryKey: ["variants"] });
                 } catch (error) {
                   console.error(error);
                   message.error("Cập nhật trạng thái thất bại!");
+                } finally {
+                  setLoadingId(null);
                 }
-                finally {
-              setLoadingId(null);
-            }
               }}
             />
            )

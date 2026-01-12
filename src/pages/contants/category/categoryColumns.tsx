@@ -36,6 +36,8 @@ const [loadingId, setLoadingId] = useState<string | null>(null);
       <Switch
         loading={loadingId === record._id}
         checked={status === "active"}
+        checkedChildren="ON"
+        unCheckedChildren="OFF"
         onChange={async (checked) => {
           setLoadingId(record._id);
           try {

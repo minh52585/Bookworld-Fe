@@ -16,7 +16,7 @@ import api from "@/config/axios.customize";
 
 interface IVariantForm {
   productId: string;
-  type: "paperback" | "hardcover";
+  type: string;
   price: number;
   quantity: number;
 }
@@ -81,7 +81,7 @@ const AddVariant = () => {
       // 🔹 Prepare payload
       const payload = {
         product_id: values.productId,
-        type: values.type === "hardcover" ? "Bìa cứng" : "Bìa mềm",
+        type: values.type,
         price: Number(values.price),
         quantity: Number(values.quantity),
         status: "active",
@@ -211,14 +211,12 @@ const AddVariant = () => {
               <Form.Item
                 label="Loại sách"
                 name="type"
-                rules={[{ required: true, message: "Vui lòng chọn loại sách" }]}
+                rules={[{ required: true, message: "Vui lòng nhập tên biến thể" }]}
               >
-                <Select
-                  placeholder="Chọn loại sách"
-                  options={[
-                    { label: "Bìa mềm", value: "paperback" },
-                    { label: "Bìa cứng", value: "hardcover" },
-                  ]}
+                 <Input
+                  style={{ width: "100%" }}
+                  min={0}
+                  placeholder="VD: Bản đặc biệt"
                 />
               </Form.Item>
              

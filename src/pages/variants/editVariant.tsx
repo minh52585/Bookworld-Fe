@@ -9,13 +9,14 @@ import {
   Row,
   Col,
   Spin,
+  Input
 } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/config/axios.customize";
 
 interface IVariantForm {
   productId: string;
-  type: "paperback" | "hardcover";
+  type: string;
   price: number;
   quantity: number;
 }
@@ -30,7 +31,7 @@ const EditVariant = () => {
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingPage, setLoadingPage] = useState(false);
-
+  
   // 🟢 fix AntD message warning
   const [msg, contextHolder] = message.useMessage();
 
@@ -61,11 +62,13 @@ const EditVariant = () => {
         });
         
         const v = res.data.data;
+   
 
+       
         // set form
         form.setFieldsValue({
           productId: v.product_id?._id,
-          type: v.type === "Bìa cứng" ? "hardcover" : "paperback",
+          type: v.type,
           price: v.price,
           quantity: v.quantity,
         });
@@ -106,7 +109,7 @@ const EditVariant = () => {
 
       const payload = {
         product_id: values.productId,
-        type: values.type === "hardcover" ? "Bìa cứng" : "Bìa mềm",
+        type: values.type,
         price: Number(values.price),
         quantity: Number(values.quantity),
         status: "active",
@@ -226,20 +229,15 @@ const EditVariant = () => {
               )}
 
                 {/* ================= VARIANT ================= */}
-                <Form.Item
-                  label="Loại sách"
-                  name="type"
+                <Form.Item label="Loại bìa"
+                name="type"
                   rules={[
-                    { required: true, message: "Vui lòng chọn loại sách" },
-                  ]}
-                >
-                  <Select
-                    options={[
-                      { label: "Bìa mềm", value: "paperback" },
-                      { label: "Bìa cứng", value: "hardcover" },
-                    ]}
-                  />
-                </Form.Item>
+                    { required: true, message: "Vui lòng nhập tên biến thể" },
+                  ]}>
+                <Input
+                  style={{ width: "100%" }} min={0}
+                />
+              </Form.Item>
 
                 <Form.Item
                   label="Giá"
