@@ -85,6 +85,10 @@ const ProductsPage = () => {
       message.success('Xoá sản phẩm thành công');
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
+    onError: (err: any) => {
+      console.error(err);
+      message.error(err.response?.data?.message || 'Xoá sản phẩm thất bại!');
+    }
   });
 
   // ======================
