@@ -19,6 +19,7 @@ import {
   DeleteOutlined,
   EditOutlined,
 } from '@ant-design/icons';
+import axios from "axios";
 import { useState } from 'react';
 import api from '@/config/axios.customize';
 import { IProducts } from '@/types/product';
@@ -48,7 +49,7 @@ const ProductsPage = () => {
   const { data: categories = [] } = useQuery<ICategory[]>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await api.get('/categories');
+      const res = await api.get('/categories/admin/categories');
       return res.data?.data?.items ?? [];
     },
   });
@@ -217,7 +218,13 @@ const ProductsPage = () => {
               queryClient.invalidateQueries({ queryKey: ["products"] });
             } catch (error) {
               console.error(error);
-              message.error("Cập nhật trạng thái thất bại!");
+              if (axios.isAxiosError(error)) {
+              message.error(
+              error.response?.data?.message || "Cập nhật trạng thái thất bại!"
+            );
+          } else {
+            message.error("Cập nhật trạng thái thất bại!");
+          }
             }
             finally {
           setLoadingId(null);

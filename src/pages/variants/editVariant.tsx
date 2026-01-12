@@ -90,7 +90,7 @@ const EditVariant = () => {
     if (!productId) return;
     try {
       setLoadingProduct(true);
-      const res = await api.get(`/products/${productId}`);
+      const res = await api.get(`/products/admin/${productId}`);
       const product =
         res.data?.data?.product || res.data?.data || res.data;
       setSelectedProduct(product);
@@ -112,7 +112,6 @@ const EditVariant = () => {
         type: values.type,
         price: Number(values.price),
         quantity: Number(values.quantity),
-        status: "active",
       };
 
       // --- THÊM TOKEN KHI CẬP NHẬT ---
@@ -143,7 +142,7 @@ const EditVariant = () => {
             <Card title="Cập nhật biến thể sản phẩm">
               <Form form={form} layout="vertical" onFinish={onFinish}>
                 {/* ================= PRODUCT ================= */}
-                <Form.Item
+                {/* <Form.Item
                   label="Sản phẩm"
                   name="productId"
                   rules={[
@@ -154,6 +153,7 @@ const EditVariant = () => {
                     placeholder="Chọn sản phẩm"
                     showSearch
                     optionFilterProp="children"
+                    disabled
                     onChange={(value) => handleSelectProduct(value)}
                   >
                     {products.map((p) => (
@@ -162,7 +162,7 @@ const EditVariant = () => {
                       </Select.Option>
                     ))}
                   </Select>
-                </Form.Item>
+                </Form.Item> */}
 
                 {/* ================= PRODUCT INFO ================= */}
                 {selectedProduct && (

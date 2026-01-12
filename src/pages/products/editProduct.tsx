@@ -3,8 +3,8 @@ import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import api from '@/config/axios.customize';
+import axios from 'axios';
 
 const ProductsUpdate = () => {
   const [form] = Form.useForm();
@@ -39,7 +39,7 @@ const ProductsUpdate = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await api.get(`/products/${id}`);
+        const res = await api.get(`/products/admin/${id}`);
         const product = res.data?.data?.product;
         if (!product) throw new Error("Không có product");
 
@@ -179,11 +179,14 @@ const ProductsUpdate = () => {
               {loadingCats ? (
                 <p>Loading...</p>
               ) : (
-                <Select placeholder="-- Chọn --">
-                  {cats.map(c => (
-                    <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>
-                  ))}
-                </Select>
+                <Select placeholder="-- Chọn --"
+                 optionLabelProp="label"
+                 options={cats.map(c => ({
+                  label: c.name,
+                  value: c._id
+                }))}
+                 
+                />
               )}
             </Form.Item>
           </Col>
@@ -207,13 +210,6 @@ const ProductsUpdate = () => {
           </Col>
         </Row>
 
-        <Form.Item
-        label="Trạng thái"
-        name="status"
-        valuePropName="checked"
-      >
-        <Switch checkedChildren="Hoạt động" unCheckedChildren="Ẩn" />
-      </Form.Item>
 
 
         <Row gutter={16}>

@@ -4,6 +4,7 @@ import { Button, Popconfirm, Space, Table, message, Select, Switch } from "antd"
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "@/config/axios.customize";
+import axios from 'axios';
 
 interface Variant {
   _id: string;
@@ -179,7 +180,13 @@ const Variants = () => {
                   message.success("Cập nhật trạng thái của biến thể thành công!");
                 } catch (error) {
                   console.error(error);
-                  message.error("Cập nhật trạng thái thất bại!");
+                  if (axios.isAxiosError(error)) {
+              message.error(
+              error.response?.data?.message || "Cập nhật trạng thái thất bại!"
+            );
+          } else {
+            message.error("Cập nhật trạng thái thất bại!");
+          }
                 } finally {
                   setLoadingId(null);
                 }
