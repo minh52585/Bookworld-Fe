@@ -21,9 +21,12 @@ import {
   CloseOutlined,
   TruckOutlined,
   ShoppingOutlined,
+  PlusOutlined
 } from "@ant-design/icons";
+import type { UploadFile } from "antd/es/upload/interface";
+
 import axios from "axios";
-import { Image } from "antd";
+import { Image, Upload } from "antd";
 
 
 const { Item } = Descriptions;
@@ -60,6 +63,7 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   images_return?: [];
+  image_completed?: string;
 }
 
 /* =========================
@@ -87,7 +91,12 @@ const OrderDetailsAdmin = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [statusNote, setStatusNote] = useState("");
   const [msgApi, contextHolder] = message.useMessage();
-
+  const [completedImage, setCompletedImage] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+  const [previewTitle, setPreviewTitle] = useState("");
   /* =========================
      WORKFLOW
   ========================= */
@@ -167,16 +176,43 @@ const OrderDetailsAdmin = () => {
       msgApi.warning("Vui lòng chọn trạng thái");
       return;
     }
+    if (
+    order?.status === "Đang giao hàng" &&
+    selectedStatus === "Giao hàng thành công" &&
+    !completedImage
+  ) {
+    msgApi.error("Vui lòng chọn ảnh xác nhận giao hàng");
+    return;
+  }
 
     setUpdating(true);
     try {
+      let imageUrl = null;
+
+      
+    if (completedImage) {
+      try {
+        setUploadingImage(true);
+        imageUrl = await uploadToCloudinary(completedImage);
+      } catch (err: any) {
+        msgApi.error(
+          err.response?.data?.error?.message ||
+          "Upload ảnh thất bại (Cloudinary)"
+        );
+        setUploadingImage(false);
+        return; // ⛔ DỪNG, KHÔNG GỌI API UPDATE
+      } finally {
+        setUploadingImage(false);
+      }
+    }
       const token = localStorage.getItem("admin_token");
       console.log("🔄 Updating status to:", selectedStatus);
       
       const res = await axios.put(
         `http://localhost:5004/api/orders/${id}/status`,
-        { status: selectedStatus, note: statusNote },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { status: selectedStatus, note: statusNote, image_completed: imageUrl, },
+        { headers: { Authorization: `Bearer ${token}` } },
+        
       );
 
       console.log("📝 Update response:", res.data);
@@ -184,7 +220,7 @@ const OrderDetailsAdmin = () => {
       if (res.data?.success) {
         msgApi.success(res.data.message || "Cập nhật trạng thái thành công");
         setStatusModalVisible(false);
-        setSelectedStatus();
+        setSelectedStatus("");
         setStatusNote("");
         fetchOrder(); // Reload order data
       } else {
@@ -207,7 +243,26 @@ const OrderDetailsAdmin = () => {
       setUpdating(false);
     }
   };
+  const uploadToCloudinary = async (file: File) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "reacttest"); // preset unsigned
+    // formData.append("folder", "orders/completed");
 
+    const res = await axios.post(
+      "https://api.cloudinary.com/v1_1/dkpfaleot/image/upload",
+      formData
+    );
+
+    return res.data.secure_url as string;
+  };
+
+  const handlePreview = async (file: UploadFile) => {
+  setPreviewImage(file.thumbUrl || file.url || "");
+  setPreviewOpen(true);
+  setPreviewTitle(file.name || "Ảnh giao hàng");
+};
   /* =========================
      RENDER
   ========================= */
@@ -367,6 +422,21 @@ const OrderDetailsAdmin = () => {
             <>
               <strong>{log.status}</strong>
               {log.note && <div>{log.note}</div>}
+
+               {log.status === "Giao hàng thành công" &&
+                order.status === "Giao hàng thành công" &&
+                order.image_completed && (
+                  <div style={{ marginTop: 8 }}>
+                    <small style={{ color: "#888" }}>Ảnh giao hàng:</small>
+                    <br />
+                    <Image
+                      src={order.image_completed}
+                      width={120}
+                      style={{ marginTop: 4, borderRadius: 6 }}
+                      preview
+                    />
+                  </div>
+                )}
               <small>
                 {new Date(log.createdAt).toLocaleString("vi-VN")}
               </small>
@@ -415,9 +485,58 @@ const OrderDetailsAdmin = () => {
             rows={3}
           />
         </Space>
+
+        {order.status === "Đang giao hàng" &&
+  selectedStatus === "Giao hàng thành công" && (
+    <div>
+      <strong>Ảnh xác nhận giao hàng:</strong>
+
+      <Upload
+        listType="picture-card"
+        fileList={fileList}
+        maxCount={1}
+        beforeUpload={() => false} // ❗ không upload ngay
+        onChange={({ fileList: newFileList }) => {
+          setFileList(newFileList);
+
+          const file = newFileList[0]?.originFileObj as File | undefined;
+          if (file) {
+            setCompletedImage(file); // 👈 dùng lại logic upload Cloudinary
+          } else {
+            setCompletedImage(null);
+          }
+        }}
+        onPreview={handlePreview}
+      >
+        {fileList.length >= 1 ? null : (
+          <div>
+            <PlusOutlined />
+            <div style={{ marginTop: 8 }}>Thêm ảnh</div>
+          </div>
+        )}
+      </Upload>
+
+      <Modal
+        open={previewOpen}
+        title={previewTitle}
+        footer={null}
+        onCancel={() => setPreviewOpen(false)}
+      >
+        <img
+          alt="preview"
+          style={{ width: "100%" }}
+          src={previewImage}
+        />
+      </Modal>
+    </div>
+)}
       </Modal>
     </>
   );
 };
-
+// {order.image_completed && (
+//   <Item label="Ảnh giao hàng" span={2}>
+//     <Image width={200} src={order.image_completed} />
+//   </Item>
+// )}
 export default OrderDetailsAdmin;

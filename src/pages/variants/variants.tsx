@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "@/config/axios.customize";
 import axios from 'axios';
-
+import { Input } from "antd";
+const { Search } = Input;
 interface Variant {
   _id: string;
   product_id:
@@ -31,7 +32,7 @@ const Variants = () => {
   
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-
+  const [searchText, setSearchText] = useState("");
   // Lấy token dùng chung cho các hàm
   const token = localStorage.getItem("admin_token");
 
@@ -63,8 +64,27 @@ const Variants = () => {
     let temp = [...variants];
     if (typeFilter) temp = temp.filter((v) => v.type === typeFilter);
     if (statusFilter) temp = temp.filter((v) => v.status === statusFilter);
+    if (searchText.trim()) {
+        const keyword = searchText.toLowerCase();
+
+        temp = temp.filter((v) => {
+          const productName =
+            typeof v.product_id !== "string"
+              ? v.product_id?.name?.toLowerCase() || ""
+              : "";
+
+          const variantName = v.variant_name?.toLowerCase() || "";
+          const sku = v.sku?.toLowerCase() || "";
+
+          return (
+            variantName.includes(keyword) ||
+            sku.includes(keyword) ||
+            productName.includes(keyword)
+          );
+        });
+      }
     setFilteredVariants(temp);
-  }, [typeFilter, statusFilter, variants]);
+  }, [typeFilter, statusFilter, variants, searchText]);
 
   const onDelete = async (_id: string) => {
     try {
@@ -257,7 +277,13 @@ const Variants = () => {
               { label: "Bìa cứng", value: "Bìa cứng" },
             ]}
           />
-        
+          <Search
+            placeholder="Tìm kiếm"
+            allowClear
+            style={{ width: 260 }}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+                  
           <Link to={`/variants/add`}>
             <Button
               icon={<PlusOutlined />}
@@ -275,7 +301,7 @@ const Variants = () => {
         columns={columns}
         dataSource={filteredVariants}
         rowKey={(record) => record._id}
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 10 }}
         loading={loading}
       />
     </div>
