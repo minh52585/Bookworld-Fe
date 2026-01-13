@@ -91,7 +91,7 @@ const ProductsAdd = () => {
         category: values.category, // ObjectId from select
         weight: values.weight || 0,
         size: values.size || "",
-        status: values.status || "active",
+        status: values.status === "inactive" ? "inactive" : "active",
         sku: values.sku || ""
       };
 
@@ -176,12 +176,12 @@ const ProductsAdd = () => {
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item label="Nhà xuất bản" name="nhaxuatban">
+            <Form.Item label="Nhà xuất bản" name="nhaxuatban" rules={[{ required: true, message: 'Vui lòng nhập nhà xuất bản' }]}>
               <Input placeholder="VD: NXB Trẻ" />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Số trang" name="sotrang">
+            <Form.Item label="Số trang" name="sotrang" rules={[{ required: true, message: 'Vui lòng số trang năm xuất bản' }]}>
               <InputNumber style={{ width: '100%' }} placeholder="VD: 350" />
             </Form.Item>
           </Col>
@@ -191,12 +191,12 @@ const ProductsAdd = () => {
 
         <Row gutter={16}>
           <Col span={8}>
-            <Form.Item label="Khối lượng (gram)" name="weight">
+            <Form.Item label="Khối lượng (gram)" name="weight" rules={[{ required: true, message: 'Vui lòng nhập khối lượng' }]}>
               <InputNumber style={{ width: '100%' }} placeholder="VD: 500" min={0} />
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item label="Kích thước" name="size">
+            <Form.Item label="Kích thước" name="size" rules={[{ required: true, message: 'Vui lòng nhập kích thước' }]}>
               <Input placeholder="VD: 20 x 13 x 2 cm" />
             </Form.Item>
           </Col>

@@ -209,7 +209,7 @@ const AddVariant = () => {
         )}
 
               <Form.Item
-                label="Loại sách"
+                label="Loại bìa"
                 name="type"
                 rules={[{ required: true, message: "Vui lòng nhập tên biến thể" }]}
               >

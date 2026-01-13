@@ -64,6 +64,7 @@ interface OrderDetail {
   updatedAt: string;
   images_return?: [];
   image_completed?: string;
+  delivered_at?: string;
 }
 
 /* =========================
@@ -327,14 +328,21 @@ const OrderDetailsAdmin = () => {
 
           <Item label="Ngày tạo">{new Date(order.createdAt).toLocaleString("vi-VN")}</Item>
           <Item label="Cập nhật cuối">{new Date(order.updatedAt).toLocaleString("vi-VN")}</Item>
-
+          <Item label="Thời gian giao hàng" span={1}>
+           {order.delivered_at && (
+                  <>
+                    <Divider style={{ margin: "0 8px " }} />
+                    {new Date(order.delivered_at).toLocaleString("vi-VN")}      
+                  </>
+          )}
+          </Item>
           {order.shipping_address && (
             <Item label="Địa chỉ giao hàng" span={2}>
               <div>
                 <strong>Họ và tên: {order.shipping_address.name}</strong> <br></br>
                 <strong>Số điện thoại: {order.shipping_address.phone}</strong> <br></br>
                 <strong>Địa chỉ: {order.shipping_address.address}</strong> 
-             
+              
               </div>
             </Item>
           )}
@@ -358,26 +366,34 @@ const OrderDetailsAdmin = () => {
           title={() => <strong>Chi tiết sản phẩm</strong>}
           columns={[
             {
-              title: "Sản phẩm",
-              render: (_, r) => (
-                <div>
-                  <strong>
-                    {typeof r.product_id === 'object' && r.product_id?.name 
-                      ? r.product_id.name 
-                      : `Product ID: ${typeof r.product_id === 'string' ? r.product_id.slice(-6) : 'Unknown'}`}
-                  </strong>
-                  {r.variant_id && (
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      Biến thể: {
-                        typeof r.variant_id === 'object' 
-                          ? (r.variant_id.type || r.variant_id.name || "—")
-                          : `Variant ID: ${typeof r.variant_id === 'string' ? r.variant_id.slice(-6) : 'Unknown'}`
-                      }
-                    </div>
-                  )}
-                </div>
-              )
-            },
+                title: "Sản phẩm",
+                render: (_, r) => {
+                  const product =
+                    typeof r.product_id === "object" ? r.product_id : null;
+                  const variant =
+                    typeof r.variant_id === "object" ? r.variant_id : null;
+
+                  return (
+                    <Space align="start">
+                      <Image
+                        width={60}
+                        src={product?.images || product?.images}
+                        fallback="/no-image.png"
+                      />
+
+                      <div>
+                        <strong>{product?.name || "Sản phẩm không xác định"}</strong>
+
+                        {variant && (
+                          <div style={{ fontSize: 12, color: "#666" }}>
+                            Loại bìa: {variant.name || variant.type}
+                          </div>
+                        )}
+                      </div>
+                    </Space>
+                  );
+                }
+              },
             {
               title: "Số lượng",
               dataIndex: "quantity",
@@ -424,7 +440,7 @@ const OrderDetailsAdmin = () => {
               {log.note && <div>{log.note}</div>}
 
                {log.status === "Giao hàng thành công" &&
-                order.status === "Giao hàng thành công" &&
+             
                 order.image_completed && (
                   <div style={{ marginTop: 8 }}>
                     <small style={{ color: "#888" }}>Ảnh giao hàng:</small>

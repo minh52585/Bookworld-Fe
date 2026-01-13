@@ -492,6 +492,7 @@ const productChartConfig = {
             <Button type="primary" block onClick={fetchAnalytics}>
               Áp dụng bộ lọc
             </Button>
+       
           </Col>
         </Row>
       </Card>

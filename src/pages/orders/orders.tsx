@@ -10,12 +10,34 @@ const ORDER_TYPES_OPTIONS = [
   { label: 'Tất cả', value: 'all' },
   { label: 'Đã hủy', value: 'Đã hủy' },
   { label: 'Chờ xử lý', value: 'Chờ xử lý' },
+  { label: 'Đang chuẩn bị hàng', value: 'Đang chuẩn bị hàng' },
+  { label: 'Đã xác nhận', value: 'Đã xác nhận' },
+  { label: 'Đang giao hàng', value: 'Đang giao hàng' },
   { label: 'Giao hàng không thành công', value: '"Giao hàng không thành công' },
   { label: 'Giao hàng thành công', value: 'Giao hàng thành công' },
   { label: 'Đang yêu cầu Trả hàng/Hoàn tiền', value: 'Đang yêu cầu Trả hàng/Hoàn tiền' },
-  { label: 'Trả hàng/Hoàn tiền thành công', value: 'Trả hàng/Hoàn tiền thành công' }
+  { label: 'Trả hàng/Hoàn tiền thành công', value: 'Trả hàng/Hoàn tiền thành công' },
+  { label: 'Hoàn tất', value: 'Hoàn tất' },
 ];
 
+const ORDER_STATUS_CONFIG: Record<
+  string,
+  { color: string; icon?: string }
+> = {
+  "Chờ xử lý": { color: "gold", icon: "⏳" },
+  "Đã xác nhận": { color: "cyan", icon: "✅" },
+  "Đang chuẩn bị hàng": { color: "blue", icon: "📦" },
+  "Đang giao hàng": { color: "processing", icon: "🚚" },
+
+  "Giao hàng không thành công": { color: "volcano", icon: "❌" },
+  "Giao hàng thành công": { color: "green", icon: "✔️" },
+
+  "Đang yêu cầu Trả hàng/Hoàn tiền": { color: "orange", icon: "↩️" },
+  "Trả hàng/Hoàn tiền thành công": { color: "success", icon: "💰" },
+
+  "Hoàn tất": { color: "default", icon: "📦" },
+  "Đã hủy": { color: "red", icon: "🛑" },
+};
 interface Order {
   _id: string;
   user_id: any;
@@ -275,13 +297,30 @@ const OrdersAdmin = () => {
         );
       }
     },
-    {
+   {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status: string) => (
-        <Tag color={statusColor(status)}>{status}</Tag>
-      ),
+      render: (status: string) => {
+        const config = ORDER_STATUS_CONFIG[status] || {
+          color: "default",
+          icon: "❓",
+        };
+
+        return (
+          <Tag
+            color={config.color}
+            style={{
+              fontWeight: 600,
+              padding: "4px 10px",
+              borderRadius: 12,
+              fontSize: 13,
+            }}
+          >
+            {config.icon} {status}
+          </Tag>
+        );
+      },
     },
     { 
       title: "Tổng tiền", 
